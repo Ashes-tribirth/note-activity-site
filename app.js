@@ -6,7 +6,7 @@ $("#search").oninput=ranking;
 const esc=s=>{const d=document.createElement("div");d.textContent=s??"";return d.innerHTML};
 const signed=n=>(n>=0?"+":"")+fmt.format(n);
 const days=(a,b)=>Math.max(1,Math.round((Date.parse(b)-Date.parse(a))/86400000)+1);
-function category(a){if(a.category)return a.category;const t=a.title;if(/🎧|曲|音楽|歌|Suno|動画|インスト/.test(t))return"音楽・動画";if(/note|ツール|AI|プロンプト|ChatGPT/.test(t))return"note・ツール";if(/孫子|思考|戦略|仕事|改善/.test(t))return"思考・仕事";if(/ゲーム|アニメ/.test(t))return"ゲーム・趣味";return"エッセイ・日常"}
+function category(a){const saved={"音楽・動画":"音楽・曲","思考・仕事":"孫子・思考"}[a.category]||a.category;if(saved)return saved;const t=a.title;if(/🎧|曲|音楽|歌|Suno|動画|インスト/.test(t))return"音楽・曲";if(/note|ツール|AI|プロンプト|ChatGPT/.test(t))return"note・ツール";if(/孫子|思考|戦略|仕事|改善/.test(t))return"孫子・思考";if(/ゲーム|アニメ/.test(t))return"ゲーム・趣味";if(t)return"エッセイ・日常";return"その他"}
 function empty(title,text){return '<div class="empty"><i>◌</i><div><b>'+esc(title)+'</b><p>'+esc(text)+'</p></div></div>'}
 function stat(label,value,note,color){return '<article class="stat" style="--c:'+color+'"><span>'+label+'</span><strong>'+fmt.format(value)+'</strong><small>'+note+'</small><i></i></article>'}
 function change(label,value,sub,ready,unit){return '<article><span>'+label+'</span>'+(ready?'<strong>'+signed(value)+' <small>'+unit+'</small></strong><p>'+sub+'</p>':'<strong class="pending">記録中</strong><p>比較に必要な日数を蓄積中</p>')+'</article>'}
