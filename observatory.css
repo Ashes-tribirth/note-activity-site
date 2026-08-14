@@ -78,17 +78,11 @@ header::after{
 .record-strip{
   position:relative;
   overflow:hidden;
-  border-color:color-mix(in srgb,var(--obs-cyan) 18%,var(--line));
+  border-color:var(--line);
   background:linear-gradient(115deg,var(--obs-panel-strong),var(--obs-panel));
   box-shadow:var(--obs-shadow);
 }
-.record-strip::before{
-  content:"";
-  position:absolute;
-  inset:0 auto 0 0;
-  width:4px;
-  background:linear-gradient(var(--obs-cyan),var(--obs-violet));
-}
+.record-strip::before{display:none}
 .record-strip>div>span{letter-spacing:.18em}
 .record-strip strong{font-variant-numeric:tabular-nums}
 
@@ -116,9 +110,7 @@ header::after{
 .title span{color:color-mix(in srgb,var(--obs-cyan) 56%,var(--muted));font-weight:700}
 .title h2{letter-spacing:-.015em}
 
-.health-panel{
-  border-top:2px solid color-mix(in srgb,var(--green) 55%,transparent);
-}
+.health-panel{border-top-color:var(--line)}
 .health-badge{border:1px solid color-mix(in srgb,var(--green) 30%,transparent)}
 .health-badge.warn{border-color:color-mix(in srgb,var(--orange) 35%,transparent)}
 .health-checks>div{
