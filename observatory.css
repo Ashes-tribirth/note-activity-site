@@ -229,17 +229,9 @@ tbody tr:hover{background:var(--obs-glow)}
   border-color:color-mix(in srgb,var(--obs-cyan) 16%,var(--line));
 }
 
-footer{position:relative}
-footer::before{
-  content:"OBSERVATION LOG / NOTE PULSE";
-  position:absolute;right:4px;top:28px;
-  font-size:10px;letter-spacing:.22em;color:color-mix(in srgb,var(--muted) 68%,transparent);
-}
-
 @media(max-width:800px){
   main{width:min(100% - 24px,1240px)}
   .panel:hover,.stat:hover,.changes article:hover{transform:none}
-  footer::before{display:none}
 }
 
 @media(max-width:520px){
