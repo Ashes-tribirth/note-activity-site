@@ -140,16 +140,7 @@ header::after{
 .stat strong{font-variant-numeric:tabular-nums;letter-spacing:-.035em}
 .stat i{height:3px;left:18px;right:18px;bottom:0;border-radius:3px 3px 0 0}
 
-.follow{overflow:hidden;position:relative}
-.follow::after{
-  content:"";
-  position:absolute;
-  width:220px;height:220px;border-radius:50%;
-  right:-125px;top:-120px;
-  border:1px solid var(--obs-grid);
-  box-shadow:0 0 0 30px var(--obs-grid),0 0 0 60px color-mix(in srgb,var(--obs-grid) 55%,transparent);
-  pointer-events:none;
-}
+.follow{position:relative}
 .follow strong{font-variant-numeric:tabular-nums}
 
 .chart-toolbar{
