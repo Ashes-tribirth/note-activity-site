@@ -36,6 +36,8 @@ body::after{
   mask-image:radial-gradient(circle,#000 0 60%,rgba(0,0,0,.78) 67%,transparent 76%);
 }
 
+body.dark::after{opacity:.62}
+
 .title::before{
   content:"";
   position:absolute;
@@ -109,8 +111,6 @@ body::after{
 .brand>b::before{width:1px;height:26px}
 .brand>b::after{width:26px;height:1px}
 
-body.dark body::after{opacity:.62}
-
 @media(max-width:800px){
   body::after{
     width:700px;
@@ -118,6 +118,7 @@ body.dark body::after{opacity:.62}
     top:18vh;
     opacity:.38;
   }
+  body.dark::after{opacity:.46}
 }
 
 @media(max-width:520px){
@@ -127,6 +128,7 @@ body.dark body::after{opacity:.62}
     top:22vh;
     opacity:.28;
   }
+  body.dark::after{opacity:.34}
   .analysis-grid::after,
   .article-ledger::after,
   .dormant-panel::after,
