@@ -1,71 +1,443 @@
-const API="https://sora-note-log.ashestribirth.chatgpt.site/api/data";
-const fmt=new Intl.NumberFormat("ja-JP");let data=null;const $=s=>document.querySelector(s);
-const themeButton=$("#theme");
-function setTheme(dark,save=false){document.body.classList.toggle("dark",dark);themeButton.textContent=dark?"☀":"☾";themeButton.setAttribute("aria-pressed",String(dark));themeButton.setAttribute("aria-label",dark?"ライトモードに切り替える":"ダークモードに切り替える");if(save)try{localStorage.setItem("note-pulse-theme",dark?"dark":"light")}catch{}}
-let savedTheme=null;try{savedTheme=localStorage.getItem("note-pulse-theme")}catch{}
-setTheme(savedTheme?savedTheme==="dark":window.matchMedia?.("(prefers-color-scheme: dark)").matches);
-themeButton.onclick=()=>setTheme(!document.body.classList.contains("dark"),true);
-const esc=s=>{const d=document.createElement("div");d.textContent=s??"";return d.innerHTML};
-const signed=n=>(n>=0?"+":"")+fmt.format(n);
-const days=(a,b)=>Math.max(1,Math.round((Date.parse(b)-Date.parse(a))/86400000)+1);
-const CATEGORY_KEYS={"音楽・曲":["n420fa20ae9eb","n393992ed32ed","nc515088747d0","n9592998b368f","ne9b32fc96142","n3a1109f33151","n2d1d7dff9637","n3b370bae013a","n258f840d369e","n34d0ac656dcd","nb0833b6b1ff5","ndf7a2fa3c733","n6926b6c7eb04","nea7fc2d6c5ca","n138db93afe6d","neddb19255a96","ne52488925452","nbf90015d1f01","n7c633af5ea3b","n90c63f04c90c"],"note・ツール":["n9e17fca823a3","ne3b6e6c6c691","n0f0cdffddd28","n7e2ee814d9e5","ncfb862f2129b","ncd9cf91707e3"],"孫子・思考":["n43a3448429c5","n11ba431b2997","n0169a720d02f","nc78d647dc52b","nb4f1881b9284","n55962928aaec","n0a557e101875","nd2c0d815c960","n66faac81de66","n8a70572582e3","nafe5b9624983","n1934f3b3039c","n072d0e080607","na529c4c9d83d","n2f6a42239b02","n881e9f367430","n0148fc482fec","nfc0ad23028e3","n655cc3fc0c16","n720d628aa696","n4998aa0e0a95","nfd9599a1dd3d","ne197cbbc2d01","ne5da666a8eaa","nce21074c6c96","n84bbaa95e7c9","nab239b6cc304","n128839a516fd","ne7d3e91d4bfe","n89fcc782782e","ncfd52133ccb9","n7048bd313ac0","nb62d6e81d130","n6fca446c54ea","na6163a72e027"],"ゲーム・趣味":["n9c85a322d1c5","n3edac688fa7a","nbf8339968e59"],"エッセイ・日常":["n8c8cb708bc48","nde83bc3f8d35","na4d90b41eaf2","nf6de7acf00e0","nac4d55a94ac6","nbd53d7781cf4","n1ce279071722","n412d5789b9b2","nf3ae3b09d862","nc0666d64043c","nf1b8902559f5","nc2a35db63d4b","nc89bfcd5c828","n1d5de5981ba0","n03c9fcd42ca6","n23cb434cb274","n8f027c5f74fa","nad9287ba7542","ne2e080c0dcf8","n8bc31246f462","n2c2309d81853","n19171a8594fc","nfc2e19b1eb17","n97c6b3a192b4"],"その他":["nf33f4fc8562a","ne6739ef3c708","n4643d114087e","n3c060c8aaa56","nf06eacbac18f"]};
-const CATEGORY_BY_KEY=new Map(Object.entries(CATEGORY_KEYS).flatMap(([name,keys])=>keys.map(key=>[key,name])));
-function category(a){return CATEGORY_BY_KEY.get(a.key||a.url.split("/").pop())||"要確認"}
-function empty(title,text){return '<div class="empty"><i>◌</i><div><b>'+esc(title)+'</b><p>'+esc(text)+'</p></div></div>'}
-function stat(label,value,note,color){return '<article class="stat" style="--c:'+color+'"><span>'+label+'</span><strong>'+fmt.format(value)+'</strong><small>'+note+'</small><i></i></article>'}
-function change(label,value,sub,ready,unit){return '<article><span>'+label+'</span>'+(ready?'<strong>'+signed(value)+' <small>'+unit+'</small></strong><p>'+sub+'</p>':'<strong class="pending">記録中</strong><p>比較に必要な日数を蓄積中</p>')+'</article>'}
-function linkRow(a,i,value,label,cls="row"){return '<a class="'+cls+'" href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer"><span class="rank">'+String(i+1).padStart(2,"0")+'</span><span>'+esc(a.title)+'</span><span><b>'+value+'</b><small>'+label+'</small></span></a>'}
-function render(d){data=d;const sums=d.summaries,latest=sums.at(-1),prev=sums.at(-2)||latest,week=sums[Math.max(0,sums.length-8)]||latest,month=sums[Math.max(0,sums.length-31)]||latest,fs=d.followers||[],follow=fs.at(-1)||{},prevFollow=fs.at(-2)||follow,dt=new Date(latest.collectedAt),intervalHours=sums.length>=2?(Date.parse(latest.collectedAt)-Date.parse(prev.collectedAt))/3600000:null,intervalLabel=intervalHours===null?"前回取得から":"前回取得から（"+intervalHours.toFixed(1)+"時間）";
-$("#recordDate").textContent=String(dt.getMonth()+1).padStart(2,"0")+"."+String(dt.getDate()).padStart(2,"0");$("#recordTime").textContent=String(dt.getHours()).padStart(2,"0")+":"+String(dt.getMinutes()).padStart(2,"0")+" JST";$("#recordCount").textContent="対象 "+latest.articleCount+"記事";$("#status").textContent="● 実データ連携中";$("#dataState").textContent="最新データを表示中";$("#lastFetched").textContent=latest.collectedAt.replace("T"," ").slice(0,16)+" JST";
-$("#changes").innerHTML=change(intervalLabel,latest.totalPv-prev.totalPv,"スキ "+signed(latest.totalLikes-prev.totalLikes)+" ／ コメント "+signed(latest.totalComments-prev.totalComments),sums.length>=2,"PV")+change("7日間",latest.totalPv-week.totalPv,"スキ "+signed(latest.totalLikes-week.totalLikes)+" ／ コメント "+signed(latest.totalComments-week.totalComments),sums.length>=8,"PV")+change("30日間",latest.totalPv-month.totalPv,"スキ "+signed(latest.totalLikes-month.totalLikes)+" ／ コメント "+signed(latest.totalComments-month.totalComments),sums.length>=31,"PV")+change("フォロワー前回比",(follow.followerCount||0)-(prevFollow.followerCount||0),"現在 "+fmt.format(follow.followerCount||0)+"人",fs.length>=2,"人");
-$("#stats").innerHTML=stat("TOTAL PV",latest.totalPv,"累計閲覧数","#3988e8")+stat("LIKES",latest.totalLikes,"平均 "+(latest.totalLikes/latest.articleCount).toFixed(1)+" / 記事","#8b67dd")+stat("COMMENTS",latest.totalComments,"平均 "+(latest.totalComments/latest.articleCount).toFixed(1)+" / 記事","#e98b50")+stat("ARTICLES",latest.articleCount,"記録対象","#45a982");
-$("#following").textContent=fmt.format(follow.followingCount||0);$("#followers").textContent=fmt.format(follow.followerCount||0);$("#followDiff").textContent=fs.length>=2?signed((follow.followerCount||0)-(prevFollow.followerCount||0)):"記録中";$("#days").textContent="記録 "+sums.length+"日目";
-const recent=sums.slice(-30),daily=recent.slice(1).map((x,i)=>({date:x.date,pv:x.totalPv-recent[i].totalPv}));if(!daily.length){$("#trendBars").innerHTML="";$("#trendNote").innerHTML=empty("明日から線になります","2日分の記録から日ごとの増加を表示します。")}else{const max=Math.max(...daily.map(x=>x.pv),1);$("#trendBars").innerHTML=daily.map(x=>'<i class="bar" title="'+x.date+': '+signed(x.pv)+' PV" style="height:'+Math.max(4,x.pv/max*100)+'%"></i>').join("");$("#trendNote").textContent=intervalLabel+" "+signed(daily.at(-1).pv)+" PV"}
-const hist=d.articleHistory||[],dates=[...new Set(hist.map(x=>x.date))],prevDate=dates.at(-2),weekDate=dates[Math.max(0,dates.length-8)],byDate=new Map();hist.forEach(x=>{if(!byDate.has(x.date))byDate.set(x.date,new Map);byDate.get(x.date).set(x.key,x)});
-const items=d.articles.map(a=>{const key=a.key||a.url.split("/").pop(),p=prevDate&&byDate.get(prevDate)?.get(key),w=weekDate&&byDate.get(weekDate)?.get(key);return{...a,key,category:category(a),d1:{pv:a.pv-(p?.pv??a.pv),likes:a.likes-(p?.likes??a.likes),comments:a.comments-(p?.comments??a.comments)},d7:{pv:a.pv-(w?.pv??a.pv),likes:a.likes-(w?.likes??a.likes),comments:a.comments-(w?.comments??a.comments)}}});
-const canJudgeDormant=dates.length>=2,dormant=canJudgeDormant?items.filter(a=>a.d7.pv===0&&a.d7.likes===0&&a.d7.comments===0):[],dormantKeys=new Set(dormant.map(a=>a.key)),activeItems=items.filter(a=>!dormantKeys.has(a.key));
-const fair=activeItems.filter(a=>a.publishedAt).sort((a,b)=>b.pv/days(b.publishedAt,latest.date)-a.pv/days(a.publishedAt,latest.date)).slice(0,6);$("#fairList").innerHTML=fair.length?fair.map((a,i)=>linkRow(a,i,(a.pv/days(a.publishedAt,latest.date)).toFixed(1),"PV/日","fair-row")).join(""):empty("公開日の取得準備中","次回の自動取得から、1日当たりPVと公開後7日間を比較します。");
-const cats=new Map;items.forEach(a=>{const active=!dormantKeys.has(a.key),c=cats.get(a.category)||{name:a.category,count:0,active:0,pv:0,likes:0,d7:0};c.count++;c.pv+=a.pv;c.likes+=a.likes;if(active){c.active++;c.d7+=a.d7.pv}cats.set(a.category,c)});const order=["音楽・曲","エッセイ・日常","note・ツール","孫子・思考","ゲーム・趣味","その他","要確認"],arr=order.filter(name=>name!=="要確認"||cats.has(name)).map(name=>cats.get(name)||{name,count:0,active:0,pv:0,likes:0,d7:0}),top=Math.max(...arr.map(x=>x.count),1);$("#categories").innerHTML=arr.map(c=>'<div><p><b>'+esc(c.name)+'</b><span>全'+c.count+'記事／動きあり '+c.active+'</span></p><i><b style="width:'+c.count/top*100+'%"></b></i><small>'+fmt.format(c.pv)+' PV ・ スキ率 '+(c.likes/Math.max(c.pv,1)*100).toFixed(1)+'% ・ 直近 '+signed(c.d7)+' PV</small></div>').join("");data.articles=activeItems;phaseOne(d,activeItems,dormant,latest,dates,items)}
-fetch(API,{credentials:"omit"}).then(r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{if(!d.ready)throw Error();render(d)}).catch(()=>{$("#status").textContent="● データを取得できません";$("#trendNote").textContent="しばらくしてから再読み込みしてください";$("#dataState").textContent="取得エラー"});
-let ledgerSort={key:"d1pv",dir:-1};
-function phaseOne(d,items,dormant,latest,historyDates,allItems){
- const sums=d.summaries||[],hist=d.articleHistory||[],now=Date.now(),latestMs=Date.parse(latest.collectedAt);
- const duplicateDates=new Set(sums.map(x=>x.date)).size!==sums.length;
- const decreasing=sums.some((x,i)=>i&&(x.totalPv<sums[i-1].totalPv||x.totalLikes<sums[i-1].totalLikes||x.totalComments<sums[i-1].totalComments));
- const countDrop=sums.some((x,i)=>i&&x.articleCount<sums[i-1].articleCount);
- const stale=!Number.isFinite(latestMs)||now-latestMs>36*3600000;
- const checks=[
-  ["最新性",stale?"注意":"正常",stale?"最終取得から36時間以上経過":"最終取得は36時間以内"],
-  ["累計値",decreasing?"注意":"正常",decreasing?"前回より小さい累計値があります":"PV・スキ・コメントに逆行なし"],
-  ["記事数",countDrop?"注意":"正常",countDrop?"記録記事数が減った日があります":"記事数の減少なし"],
-  ["日付",duplicateDates?"注意":"正常",duplicateDates?"同じ日付の記録が重複":"日付の重複なし"]
- ];
- const warnings=checks.filter(x=>x[1]==="注意").length;
- $("#healthBadge").textContent=warnings?warnings+"件 要確認":"異常なし";
- $("#healthBadge").classList.toggle("warn",!!warnings);
- $("#healthChecks").innerHTML=checks.map(x=>'<div class="'+(x[1]==="正常"?"ok":"warn")+'"><b>'+esc(x[0])+'</b><strong>'+x[1]+'</strong><small>'+esc(x[2])+'</small></div>').join("");
+const API = "https://sora-note-log.ashestribirth.chatgpt.site/api/data";
+const fmt = new Intl.NumberFormat("ja-JP");
+const $ = selector => document.querySelector(selector);
+const esc = value => {
+  const node = document.createElement("div");
+  node.textContent = value ?? "";
+  return node.innerHTML;
+};
+const signed = value => `${value >= 0 ? "+" : ""}${fmt.format(value)}`;
+const days = (from, to) => Math.max(1, Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1);
+let ledgerSort = { key: "d1pv", dir: -1 };
 
- function period(n){if(sums.length<2*n+1)return null;const a=sums.at(-1),b=sums.at(-1-n),c=sums.at(-1-2*n);return{current:a.totalPv-b.totalPv,previous:b.totalPv-c.totalPv,likes:a.totalLikes-b.totalLikes,prevLikes:b.totalLikes-c.totalLikes}}
- $("#periodCompare").innerHTML=[7,30].map(n=>{const p=period(n);if(!p)return empty(n+"日比較は記録中","あと "+Math.max(0,2*n+1-sums.length)+" 日分で直前期間と比較できます。");const diff=p.current-p.previous,rate=p.previous?diff/p.previous*100:null;return '<div class="period-row"><b>'+n+'日</b><span>直近 <strong>'+signed(p.current)+'</strong> PV</span><span>前期間 '+signed(p.previous)+' PV</span><em class="'+(diff>=0?"up":"down")+'">'+signed(diff)+' / '+(rate===null?"—":signed(Math.round(rate))+"%")+'</em><small>スキ '+signed(p.likes)+'（前期間 '+signed(p.prevLikes)+'）</small></div>'}).join("");
-
- const basisDays=Math.min(7,Math.max(1,historyDates.length-1));
- $("#dormantCount").textContent=historyDates.length<2?"判定待ち":dormant.length+"記事";
- $("#dormantBasis").textContent=historyDates.length<2?"2日分の記録から判定を開始します。":basisDays<7?"記録開始から"+basisDays+"日間、PV・スキ・コメントがすべて変わっていない記事です。7日分が貯まるまでは暫定判定です。":"直近7日間、PV・スキ・コメントがすべて変わっていない記事です。";
- const dormantPv=dormant.reduce((s,a)=>s+a.pv,0),dormantLikes=dormant.reduce((s,a)=>s+a.likes,0);
- $("#dormantSummary").innerHTML=dormant.length?'<div><span>対象</span><b>'+dormant.length+'記事</b></div><div><span>累計PV</span><b>'+fmt.format(dormantPv)+'</b></div><div><span>累計スキ</span><b>'+fmt.format(dormantLikes)+'</b></div>':empty(historyDates.length<2?"判定待ち":"該当なし",historyDates.length<2?"次回記録後から動きの有無を判定します。":"通常分析から外れる記事はありません。");
-
- const groups=[{name:"公開7日以内",pv:0},{name:"公開8〜30日",pv:0},{name:"公開31日以上",pv:0},{name:"公開日不明",pv:0}];
- items.forEach(a=>{const age=a.publishedAt?days(a.publishedAt,latest.date):null,idx=age===null?3:age<=7?0:age<=30?1:2;groups[idx].pv+=Math.max(0,a.d1.pv)});
- const ageTotal=groups.reduce((s,x)=>s+x.pv,0);
- $("#ageMix").innerHTML=ageTotal?'<div class="mixbar">'+groups.map((g,i)=>'<i class="mix-'+i+'" style="width:'+(g.pv/ageTotal*100)+'%" title="'+g.name+' '+g.pv+'PV"></i>').join("")+'</div>'+groups.map((g,i)=>'<p><i class="dot mix-'+i+'"></i><span>'+g.name+'</span><b>'+fmt.format(g.pv)+' PV</b><small>'+(g.pv/ageTotal*100).toFixed(1)+'%</small></p>').join(""):empty("前回差を記録中","2回分の記事履歴から内訳を表示します。");
-
- const mapItems=items.filter(a=>a.pv>0),maxPv=Math.max(...mapItems.map(a=>a.pv),1),maxRate=Math.max(...mapItems.map(a=>(a.likes+a.comments)/a.pv),.01);
- $("#articleMap").innerHTML='<div class="axis-y">反応率 高</div><div class="axis-x">PV 高 →</div>'+mapItems.map(a=>{const rate=(a.likes+a.comments)/a.pv,x=Math.sqrt(a.pv/maxPv)*92+3,y=94-rate/maxRate*88;return '<a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer" class="point" style="left:'+x+'%;top:'+y+'%" title="'+esc(a.title)+'｜'+a.pv+' PV｜反応率 '+(rate*100).toFixed(1)+'%"></a>'}).join("");
-
- const select=$("#curveSelect");select.innerHTML=[...items].sort((a,b)=>b.d1.pv-a.d1.pv).map(a=>'<option value="'+esc(a.key)+'">'+esc(a.title)+'</option>').join("");
- const drawCurve=()=>{const key=select.value,rows=hist.filter(x=>x.key===key).sort((a,b)=>a.date.localeCompare(b.date)),a=items.find(x=>x.key===key);if(!rows.length&&a)rows.push({date:latest.date,pv:a.pv});const min=Math.min(...rows.map(x=>x.pv)),max=Math.max(...rows.map(x=>x.pv)),range=Math.max(1,max-min),pts=rows.map((x,i)=>((i/Math.max(1,rows.length-1))*100)+","+(92-(x.pv-min)/range*80)).join(" ");$("#curveChart").innerHTML=rows.length>1?'<svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="'+pts+'"/></svg>':empty("推移は記録中","記事別履歴が2日分になると線で表示します。");$("#curveNote").textContent=rows.length?rows[0].date+" → "+rows.at(-1).date+" ／ "+fmt.format(rows[0].pv)+" → "+fmt.format(rows.at(-1).pv)+" PV":""};select.onchange=drawCurve;drawCurve();
-
- const categories=[...new Set(allItems.map(a=>a.category))].sort(),dormantKeys=new Set(dormant.map(a=>a.key)),finalStatus=historyDates.length>=8;$("#categoryFilter").innerHTML='<option value="">すべての分類</option>'+categories.map(c=>'<option>'+esc(c)+'</option>').join("");
- const drawLedger=()=>{const q=$("#ledgerSearch").value.toLowerCase(),cat=$("#categoryFilter").value,status=$("#statusFilter").value;const rows=allItems.map(a=>{const dormantState=dormantKeys.has(a.key);return{...a,d1pv:a.d1.pv,d7pv:a.d7.pv,rate:(a.likes+a.comments)/Math.max(1,a.pv),status:dormantState?"dormant":"active",statusLabel:(finalStatus?"":"暫定・")+(dormantState?"7日間動きなし":"動きあり")}}).filter(a=>(!q||a.title.toLowerCase().includes(q))&&(!cat||a.category===cat)&&(!status||a.status===status)).sort((a,b)=>{const x=a[ledgerSort.key]??"",y=b[ledgerSort.key]??"";return(typeof x==="number"?x-y:String(x).localeCompare(String(y),"ja"))*ledgerSort.dir});$("#ledgerBody").innerHTML=rows.map(a=>'<tr><td><a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer">'+esc(a.title)+'</a></td><td>'+esc(a.category)+'</td><td>'+(a.publishedAt?a.publishedAt.slice(0,10):"—")+'</td><td>'+fmt.format(a.pv)+'</td><td>'+fmt.format(a.likes)+'</td><td>'+fmt.format(a.comments)+'</td><td>'+signed(a.d1pv)+'</td><td>'+signed(a.d7pv)+'</td><td>'+(a.rate*100).toFixed(1)+'%</td><td><span class="state '+a.status+'">'+a.statusLabel+'</span></td></tr>').join("")};
- $("#ledgerSearch").oninput=drawLedger;$("#categoryFilter").onchange=drawLedger;$("#statusFilter").onchange=drawLedger;document.querySelectorAll("[data-sort]").forEach(th=>th.onclick=()=>{const k=th.dataset.sort;if(ledgerSort.key===k)ledgerSort.dir*=-1;else ledgerSort={key:k,dir:["title","category","publishedAt"].includes(k)?1:-1};drawLedger()});drawLedger();
+function setTheme(dark, save = false) {
+  document.body.classList.toggle("dark", dark);
+  const button = $("#theme");
+  if (!button) return;
+  button.textContent = dark ? "☀" : "☾";
+  button.setAttribute("aria-pressed", String(dark));
+  button.setAttribute("aria-label", dark ? "ライトモードに切り替える" : "ダークモードに切り替える");
+  if (save) {
+    try { localStorage.setItem("note-pulse-theme", dark ? "dark" : "light"); } catch {}
+  }
 }
+
+function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem("note-pulse-theme"); } catch {}
+  setTheme(saved ? saved === "dark" : !!window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+  $("#theme")?.addEventListener("click", () => setTheme(!document.body.classList.contains("dark"), true));
+}
+
+function categoryOf(article) {
+  return article.category || "要確認";
+}
+
+function empty(title, text) {
+  return `<div class="empty"><i>◌</i><div><b>${esc(title)}</b><p>${esc(text)}</p></div></div>`;
+}
+
+function stat(label, value, note, color) {
+  return `<article class="stat" style="--c:${color}"><span>${label}</span><strong>${fmt.format(value)}</strong><small>${note}</small><i></i></article>`;
+}
+
+function change(label, value, sub, ready, unit) {
+  return `<article><span>${label}</span>${
+    ready
+      ? `<strong>${signed(value)} <small>${unit}</small></strong><p>${sub}</p>`
+      : '<strong class="pending">記録中</strong><p>比較に必要な日数を蓄積中</p>'
+  }</article>`;
+}
+
+function linkRow(article, index, value, label, cls = "row") {
+  return `<a class="${cls}" href="${esc(article.url)}" target="_blank" rel="noopener noreferrer"><span class="rank">${String(index + 1).padStart(2, "0")}</span><span>${esc(article.title)}</span><span><b>${value}</b><small>${label}</small></span></a>`;
+}
+
+function latestDateOf(data) {
+  const summaries = data.summaries || [];
+  const history = data.articleHistory || [];
+  return summaries.at(-1)?.date || summaries.at(-1)?.collectedDate || history.at(-1)?.date || "";
+}
+
+function filterCurrentArticles(data) {
+  const history = data.articleHistory || [];
+  const latestDate = latestDateOf(data);
+  if (!latestDate || !Array.isArray(data.articles) || !history.length) return data;
+
+  const currentKeys = new Set(
+    history.filter(row => row.date === latestDate).map(row => row.key).filter(Boolean)
+  );
+  if (!currentKeys.size) return data;
+
+  return {
+    ...data,
+    articles: data.articles.filter(article => {
+      const key = article.key || String(article.url || "").split("/").pop();
+      return currentKeys.has(key);
+    }),
+  };
+}
+
+function addApprovedFollowerBackfill(data) {
+  const followers = [...(data.followers || [])];
+  const has813 = followers.some(row => String(row.date || row.collectedDate || row.collectedAt || "").startsWith("2026-08-13"));
+  const has814 = followers.some(row => String(row.date || row.collectedDate || row.collectedAt || "").startsWith("2026-08-14"));
+  if (!has813 && has814) {
+    followers.unshift({
+      date: "2026-08-13",
+      collectedAt: "2026-08-13T19:17:15+09:00",
+      followingCount: null,
+      followerCount: 198,
+      special: true,
+    });
+  }
+  return { ...data, followers };
+}
+
+function prepareData(raw) {
+  return addApprovedFollowerBackfill(filterCurrentArticles(raw));
+}
+
+function buildArticleItems(data) {
+  const history = data.articleHistory || [];
+  const dates = [...new Set(history.map(row => row.date))].sort();
+  const previousDate = dates.at(-2);
+  const comparisonDate = dates[Math.max(0, dates.length - 8)];
+  const byDate = new Map();
+
+  history.forEach(row => {
+    if (!byDate.has(row.date)) byDate.set(row.date, new Map());
+    byDate.get(row.date).set(row.key, row);
+  });
+
+  const items = (data.articles || []).map(article => {
+    const key = article.key || String(article.url || "").split("/").pop();
+    const previous = previousDate ? byDate.get(previousDate)?.get(key) : null;
+    const comparison = comparisonDate ? byDate.get(comparisonDate)?.get(key) : null;
+    return {
+      ...article,
+      key,
+      category: categoryOf(article),
+      d1: {
+        pv: article.pv - (previous?.pv ?? article.pv),
+        likes: article.likes - (previous?.likes ?? article.likes),
+        comments: article.comments - (previous?.comments ?? article.comments),
+      },
+      d7: {
+        pv: article.pv - (comparison?.pv ?? article.pv),
+        likes: article.likes - (comparison?.likes ?? article.likes),
+        comments: article.comments - (comparison?.comments ?? article.comments),
+      },
+    };
+  });
+
+  return { items, dates };
+}
+
+function renderHeaderAndTotals(data, latest, previous, intervalLabel) {
+  const dt = new Date(latest.collectedAt);
+  $("#recordDate").textContent = `${String(dt.getMonth() + 1).padStart(2, "0")}.${String(dt.getDate()).padStart(2, "0")}`;
+  $("#recordTime").textContent = `${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")} JST`;
+  $("#recordCount").textContent = `対象 ${latest.articleCount}記事`;
+  $("#status").textContent = "● 実データ連携中";
+  $("#dataState").textContent = "最新データを表示中";
+  $("#lastFetched").textContent = `${latest.collectedAt.replace("T", " ").slice(0, 16)} JST`;
+
+  const summaries = data.summaries || [];
+  const week = summaries[Math.max(0, summaries.length - 8)] || latest;
+  const month = summaries[Math.max(0, summaries.length - 31)] || latest;
+  const followers = data.followers || [];
+  const follow = followers.at(-1) || {};
+  const previousFollow = followers.at(-2) || follow;
+  const followerReady = followers.length >= 2 && Number.isFinite(Number(follow.followerCount)) && Number.isFinite(Number(previousFollow.followerCount));
+
+  $("#changes").innerHTML =
+    change(intervalLabel, latest.totalPv - previous.totalPv, `スキ ${signed(latest.totalLikes - previous.totalLikes)} ／ コメント ${signed(latest.totalComments - previous.totalComments)}`, summaries.length >= 2, "PV") +
+    change("7日間", latest.totalPv - week.totalPv, `スキ ${signed(latest.totalLikes - week.totalLikes)} ／ コメント ${signed(latest.totalComments - week.totalComments)}`, summaries.length >= 8, "PV") +
+    change("30日間", latest.totalPv - month.totalPv, `スキ ${signed(latest.totalLikes - month.totalLikes)} ／ コメント ${signed(latest.totalComments - month.totalComments)}`, summaries.length >= 31, "PV") +
+    change("フォロワー前回比", followerReady ? Number(follow.followerCount) - Number(previousFollow.followerCount) : 0, `現在 ${fmt.format(Number(follow.followerCount) || 0)}人`, followerReady, "人");
+
+  $("#stats").innerHTML =
+    stat("TOTAL PV", latest.totalPv, "累計閲覧数", "#3988e8") +
+    stat("LIKES", latest.totalLikes, `平均 ${(latest.totalLikes / latest.articleCount).toFixed(1)} / 記事`, "#8b67dd") +
+    stat("COMMENTS", latest.totalComments, `平均 ${(latest.totalComments / latest.articleCount).toFixed(1)} / 記事`, "#e98b50") +
+    stat("ARTICLES", latest.articleCount, "記録対象", "#45a982");
+
+  $("#following").textContent = follow.followingCount == null ? "—" : fmt.format(follow.followingCount);
+  $("#followers").textContent = follow.followerCount == null ? "—" : fmt.format(follow.followerCount);
+  $("#followDiff").textContent = followerReady ? signed(Number(follow.followerCount) - Number(previousFollow.followerCount)) : "記録中";
+  $("#days").textContent = `記録 ${summaries.length}日目`;
+}
+
+function renderFairComparison(activeItems, latest) {
+  const fair = activeItems
+    .filter(article => article.publishedAt)
+    .sort((a, b) => b.pv / days(b.publishedAt, latest.date) - a.pv / days(a.publishedAt, latest.date))
+    .slice(0, 6);
+
+  $("#fairList").innerHTML = fair.length
+    ? fair.map((article, index) => linkRow(article, index, (article.pv / days(article.publishedAt, latest.date)).toFixed(1), "PV/日", "fair-row")).join("")
+    : empty("公開日の取得準備中", "次回の自動取得から、1日当たりPVと公開後7日間を比較します。");
+}
+
+function renderCategories(items, dormantKeys) {
+  const categories = new Map();
+  items.forEach(article => {
+    const active = !dormantKeys.has(article.key);
+    const entry = categories.get(article.category) || { name: article.category, count: 0, active: 0, pv: 0, likes: 0, d7: 0 };
+    entry.count += 1;
+    entry.pv += article.pv;
+    entry.likes += article.likes;
+    if (active) {
+      entry.active += 1;
+      entry.d7 += article.d7.pv;
+    }
+    categories.set(article.category, entry);
+  });
+
+  const order = ["音楽・曲", "エッセイ・日常", "note・ツール", "孫子・思考", "ゲーム・趣味", "その他", "要確認"];
+  const rows = order
+    .filter(name => name !== "要確認" || categories.has(name))
+    .map(name => categories.get(name) || { name, count: 0, active: 0, pv: 0, likes: 0, d7: 0 });
+  const top = Math.max(...rows.map(row => row.count), 1);
+
+  $("#categories").innerHTML = rows.map(row =>
+    `<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり ${row.active}</span></p><i><b style="width:${row.count / top * 100}%"></b></i><small>${fmt.format(row.pv)} PV ・ スキ率 ${(row.likes / Math.max(row.pv, 1) * 100).toFixed(1)}% ・ 直近 ${signed(row.d7)} PV</small></div>`
+  ).join("");
+}
+
+function renderHealth(data, latest) {
+  const summaries = data.summaries || [];
+  const latestMs = Date.parse(latest.collectedAt);
+  const stale = !Number.isFinite(latestMs) || Date.now() - latestMs > 36 * 3600000;
+  const duplicateDates = new Set(summaries.map(row => row.date)).size !== summaries.length;
+  const decreasing = summaries.some((row, index) => index && (
+    row.totalPv < summaries[index - 1].totalPv ||
+    row.totalLikes < summaries[index - 1].totalLikes ||
+    row.totalComments < summaries[index - 1].totalComments
+  ));
+  const countDrop = summaries.some((row, index) => index && row.articleCount < summaries[index - 1].articleCount);
+
+  const checks = [
+    ["最新性", stale ? "注意" : "正常", stale ? "最終取得から36時間以上経過" : "最終取得は36時間以内"],
+    ["累計値", decreasing ? "注意" : "正常", decreasing ? "前回より小さい累計値があります" : "PV・スキ・コメントに逆行なし"],
+    ["記事数", countDrop ? "注意" : "正常", countDrop ? "記録記事数が減った日があります" : "記事数の減少なし"],
+    ["日付", duplicateDates ? "注意" : "正常", duplicateDates ? "同じ日付の記録が重複" : "日付の重複なし"],
+  ];
+  const warnings = checks.filter(row => row[1] === "注意").length;
+  $("#healthBadge").textContent = warnings ? `${warnings}件 要確認` : "異常なし";
+  $("#healthBadge").classList.toggle("warn", !!warnings);
+  $("#healthChecks").innerHTML = checks.map(row =>
+    `<div class="${row[1] === "正常" ? "ok" : "warn"}"><b>${esc(row[0])}</b><strong>${row[1]}</strong><small>${esc(row[2])}</small></div>`
+  ).join("");
+}
+
+function renderPeriodComparison(data) {
+  const summaries = data.summaries || [];
+  const period = n => {
+    if (summaries.length < 2 * n + 1) return null;
+    const a = summaries.at(-1);
+    const b = summaries.at(-1 - n);
+    const c = summaries.at(-1 - 2 * n);
+    return {
+      current: a.totalPv - b.totalPv,
+      previous: b.totalPv - c.totalPv,
+      likes: a.totalLikes - b.totalLikes,
+      prevLikes: b.totalLikes - c.totalLikes,
+    };
+  };
+
+  $("#periodCompare").innerHTML = [7, 30].map(n => {
+    const result = period(n);
+    if (!result) return empty(`${n}日比較は記録中`, `あと ${Math.max(0, 2 * n + 1 - summaries.length)} 日分で直前期間と比較できます。`);
+    const diff = result.current - result.previous;
+    const rate = result.previous ? diff / result.previous * 100 : null;
+    return `<div class="period-row"><b>${n}日</b><span>直近 <strong>${signed(result.current)}</strong> PV</span><span>前期間 ${signed(result.previous)} PV</span><em class="${diff >= 0 ? "up" : "down"}">${signed(diff)} / ${rate == null ? "—" : `${signed(Math.round(rate))}%`}</em><small>スキ ${signed(result.likes)}（前期間 ${signed(result.prevLikes)}）</small></div>`;
+  }).join("");
+}
+
+function renderDormant(dormant, historyDates) {
+  const basisDays = Math.min(7, Math.max(1, historyDates.length - 1));
+  $("#dormantCount").textContent = historyDates.length < 2 ? "判定待ち" : `${dormant.length}記事`;
+  $("#dormantBasis").textContent = historyDates.length < 2
+    ? "2日分の記録から判定を開始します。"
+    : basisDays < 7
+      ? `記録開始から${basisDays}日間、PV・スキ・コメントがすべて変わっていない記事です。7日分が貯まるまでは暫定判定です。`
+      : "直近7日間、PV・スキ・コメントがすべて変わっていない記事です。";
+
+  const pv = dormant.reduce((sum, article) => sum + article.pv, 0);
+  const likes = dormant.reduce((sum, article) => sum + article.likes, 0);
+  $("#dormantSummary").innerHTML = dormant.length
+    ? `<div><span>対象</span><b>${dormant.length}記事</b></div><div><span>累計PV</span><b>${fmt.format(pv)}</b></div><div><span>累計スキ</span><b>${fmt.format(likes)}</b></div>`
+    : empty(
+        historyDates.length < 2 ? "判定待ち" : "該当なし",
+        historyDates.length < 2 ? "次回記録後から動きの有無を判定します。" : "動きのない記事はありません。"
+      );
+}
+
+function renderAgeMix(items, latest) {
+  const groups = [
+    { name: "公開7日以内", pv: 0 },
+    { name: "公開8〜30日", pv: 0 },
+    { name: "公開31日以上", pv: 0 },
+    { name: "公開日不明", pv: 0 },
+  ];
+  items.forEach(article => {
+    const age = article.publishedAt ? days(article.publishedAt, latest.date) : null;
+    const index = age == null ? 3 : age <= 7 ? 0 : age <= 30 ? 1 : 2;
+    groups[index].pv += Math.max(0, article.d1.pv);
+  });
+  const total = groups.reduce((sum, group) => sum + group.pv, 0);
+  $("#ageMix").innerHTML = total
+    ? `<div class="mixbar">${groups.map((group, index) => `<i class="mix-${index}" style="width:${group.pv / total * 100}%" title="${group.name} ${group.pv}PV"></i>`).join("")}</div>${groups.map((group, index) => `<p><i class="dot mix-${index}"></i><span>${group.name}</span><b>${fmt.format(group.pv)} PV</b><small>${(group.pv / total * 100).toFixed(1)}%</small></p>`).join("")}`
+    : empty("前回差を記録中", "2回分の記事履歴から内訳を表示します。");
+}
+
+function renderArticleMap(items) {
+  const mapItems = items.filter(article => article.pv > 0);
+  const maxPv = Math.max(...mapItems.map(article => article.pv), 1);
+  const maxRate = Math.max(...mapItems.map(article => (article.likes + article.comments) / article.pv), 0.01);
+  $("#articleMap").innerHTML =
+    '<div class="axis-y">反応率 高</div><div class="axis-x">PV 高 →</div>' +
+    mapItems.map(article => {
+      const rate = (article.likes + article.comments) / article.pv;
+      const x = Math.sqrt(article.pv / maxPv) * 92 + 3;
+      const y = 94 - rate / maxRate * 88;
+      return `<a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer" class="point" style="left:${x}%;top:${y}%" title="${esc(article.title)}｜${article.pv} PV｜反応率 ${(rate * 100).toFixed(1)}%"></a>`;
+    }).join("");
+}
+
+function renderGrowthCurve(data, items, latest) {
+  const history = data.articleHistory || [];
+  const select = $("#curveSelect");
+  select.innerHTML = [...items]
+    .sort((a, b) => b.d1.pv - a.d1.pv)
+    .map(article => `<option value="${esc(article.key)}">${esc(article.title)}</option>`)
+    .join("");
+
+  const draw = () => {
+    const key = select.value;
+    const rows = history.filter(row => row.key === key).sort((a, b) => a.date.localeCompare(b.date));
+    const article = items.find(item => item.key === key);
+    if (!rows.length && article) rows.push({ date: latest.date, pv: article.pv });
+    const min = Math.min(...rows.map(row => row.pv));
+    const max = Math.max(...rows.map(row => row.pv));
+    const range = Math.max(1, max - min);
+    const points = rows.map((row, index) => `${index / Math.max(1, rows.length - 1) * 100},${92 - (row.pv - min) / range * 80}`).join(" ");
+    $("#curveChart").innerHTML = rows.length > 1
+      ? `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="${points}"/></svg>`
+      : empty("推移は記録中", "記事別履歴が2日分になると線で表示します。");
+    $("#curveNote").textContent = rows.length
+      ? `${rows[0].date} → ${rows.at(-1).date} ／ ${fmt.format(rows[0].pv)} → ${fmt.format(rows.at(-1).pv)} PV`
+      : "";
+  };
+
+  select.onchange = draw;
+  draw();
+}
+
+function renderLedger(allItems, dormant, historyDates) {
+  const dormantKeys = new Set(dormant.map(article => article.key));
+  const categories = [...new Set(allItems.map(article => article.category))].sort();
+  const finalStatus = historyDates.length >= 8;
+  $("#categoryFilter").innerHTML = '<option value="">すべての分類</option>' + categories.map(category => `<option>${esc(category)}</option>`).join("");
+
+  const draw = () => {
+    const query = $("#ledgerSearch").value.toLowerCase();
+    const category = $("#categoryFilter").value;
+    const status = $("#statusFilter").value;
+    const rows = allItems
+      .map(article => {
+        const dormantState = dormantKeys.has(article.key);
+        return {
+          ...article,
+          d1pv: article.d1.pv,
+          d7pv: article.d7.pv,
+          rate: (article.likes + article.comments) / Math.max(1, article.pv),
+          status: dormantState ? "dormant" : "active",
+          statusLabel: `${finalStatus ? "" : "暫定・"}${dormantState ? "7日間動きなし" : "動きあり"}`,
+        };
+      })
+      .filter(article => (!query || article.title.toLowerCase().includes(query)) && (!category || article.category === category) && (!status || article.status === status))
+      .sort((a, b) => {
+        const x = a[ledgerSort.key] ?? "";
+        const y = b[ledgerSort.key] ?? "";
+        return (typeof x === "number" ? x - y : String(x).localeCompare(String(y), "ja")) * ledgerSort.dir;
+      });
+
+    $("#ledgerBody").innerHTML = rows.map(article =>
+      `<tr><td><a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a></td><td>${esc(article.category)}</td><td>${article.publishedAt ? article.publishedAt.slice(0, 10) : "—"}</td><td>${fmt.format(article.pv)}</td><td>${fmt.format(article.likes)}</td><td>${fmt.format(article.comments)}</td><td>${signed(article.d1pv)}</td><td>${signed(article.d7pv)}</td><td>${(article.rate * 100).toFixed(1)}%</td><td><span class="state ${article.status}">${article.statusLabel}</span></td></tr>`
+    ).join("");
+  };
+
+  $("#ledgerSearch").oninput = draw;
+  $("#categoryFilter").onchange = draw;
+  $("#statusFilter").onchange = draw;
+  document.querySelectorAll("[data-sort]").forEach(header => {
+    header.onclick = () => {
+      const key = header.dataset.sort;
+      if (ledgerSort.key === key) ledgerSort.dir *= -1;
+      else ledgerSort = { key, dir: ["title", "category", "publishedAt"].includes(key) ? 1 : -1 };
+      draw();
+    };
+  });
+  draw();
+}
+
+function renderPhaseOne(data, activeItems, dormant, latest, historyDates, allItems) {
+  renderHealth(data, latest);
+  renderPeriodComparison(data);
+  renderDormant(dormant, historyDates);
+  renderAgeMix(activeItems, latest);
+  renderArticleMap(activeItems);
+  renderGrowthCurve(data, activeItems, latest);
+  renderLedger(allItems, dormant, historyDates);
+}
+
+function render(data) {
+  const summaries = data.summaries || [];
+  const latest = summaries.at(-1);
+  if (!latest) throw new Error("No summary data");
+
+  const previous = summaries.at(-2) || latest;
+  const intervalHours = summaries.length >= 2
+    ? (Date.parse(latest.collectedAt) - Date.parse(previous.collectedAt)) / 3600000
+    : null;
+  const intervalLabel = intervalHours == null ? "前回取得から" : `前回取得から（${intervalHours.toFixed(1)}時間）`;
+
+  renderHeaderAndTotals(data, latest, previous, intervalLabel);
+
+  const { items, dates } = buildArticleItems(data);
+  const canJudgeDormant = dates.length >= 2;
+  const dormant = canJudgeDormant
+    ? items.filter(article => article.d7.pv === 0 && article.d7.likes === 0 && article.d7.comments === 0)
+    : [];
+  const dormantKeys = new Set(dormant.map(article => article.key));
+  const activeItems = items.filter(article => !dormantKeys.has(article.key));
+
+  renderFairComparison(activeItems, latest);
+  renderCategories(items, dormantKeys);
+  renderPhaseOne(data, activeItems, dormant, latest, dates, items);
+
+  window.notePulseData = data;
+  window.NotePulseCharts?.render(data);
+}
+
+function showLoadError() {
+  $("#status").textContent = "● データを取得できません";
+  $("#trendNote").textContent = "しばらくしてから再読み込みしてください";
+  $("#dataState").textContent = "取得エラー";
+}
+
+initTheme();
+
+fetch(API, { credentials: "omit" })
+  .then(response => {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  })
+  .then(raw => {
+    if (!raw.ready) throw new Error("API not ready");
+    render(prepareData(raw));
+  })
+  .catch(showLoadError);
