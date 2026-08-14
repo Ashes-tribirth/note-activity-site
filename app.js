@@ -1,5 +1,10 @@
 const API="https://sora-note-log.ashestribirth.chatgpt.site/api/data";
 const fmt=new Intl.NumberFormat("ja-JP");let data=null;const $=s=>document.querySelector(s);
+const themeButton=$("#theme");
+function setTheme(dark,save=false){document.body.classList.toggle("dark",dark);themeButton.textContent=dark?"☀":"☾";themeButton.setAttribute("aria-pressed",String(dark));themeButton.setAttribute("aria-label",dark?"ライトモードに切り替える":"ダークモードに切り替える");if(save)try{localStorage.setItem("note-pulse-theme",dark?"dark":"light")}catch{}}
+let savedTheme=null;try{savedTheme=localStorage.getItem("note-pulse-theme")}catch{}
+setTheme(savedTheme?savedTheme==="dark":window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+themeButton.onclick=()=>setTheme(!document.body.classList.contains("dark"),true);
 const esc=s=>{const d=document.createElement("div");d.textContent=s??"";return d.innerHTML};
 const signed=n=>(n>=0?"+":"")+fmt.format(n);
 const days=(a,b)=>Math.max(1,Math.round((Date.parse(b)-Date.parse(a))/86400000)+1);
