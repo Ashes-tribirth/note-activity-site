@@ -3,6 +3,24 @@ const API="https://sora-note-log.ashestribirth.chatgpt.site/api/data";
 const fmt=new Intl.NumberFormat("ja-JP");
 const $=s=>document.querySelector(s);
 const state={data:null,activityRange:"30",followRange:"30"};
+const originalRender=window.render;
+if(typeof originalRender==="function"){
+ window.render=function(d){
+  const history=Array.isArray(d?.articleHistory)?d.articleHistory:[];
+  const summaries=Array.isArray(d?.summaries)?d.summaries:[];
+  const latestDate=summaries.at(-1)?.date||summaries.at(-1)?.collectedDate||history.at(-1)?.date||"";
+  if(latestDate&&Array.isArray(d?.articles)&&history.length){
+   const currentKeys=new Set(history.filter(row=>row?.date===latestDate).map(row=>row?.key).filter(Boolean));
+   if(currentKeys.size){
+    d={...d,articles:d.articles.filter(article=>{
+     const key=article?.key||String(article?.url||"").split("/").pop();
+     return currentKeys.has(key);
+    })};
+   }
+  }
+  return originalRender(d);
+ };
+}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
 function finite(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null}
 function asDate(row){const raw=row?.collectedAt||row?.date||row?.collectedDate;const d=new Date(raw);return Number.isNaN(d.getTime())?null:d}
