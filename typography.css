@@ -1,0 +1,81 @@
+/* Readability layer: keep the dense dashboard layout while making text easier to scan. */
+body{font-family:"Meiryo UI",Meiryo,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;font-size:16px;line-height:1.7}
+
+.brand strong{font-size:20px}
+.brand small,.eyebrow,.title span,aside>span,.follow span{font-size:12px}
+.status{font-size:13px}
+
+.stat>span{font-size:12px}
+.stat strong{font-size:31px}
+.stat small{font-size:13px}
+.follow h2{font-size:22px}
+.follow strong{font-size:29px}
+.follow small{font-size:13px}
+.title h2{font-size:23px;line-height:1.45}
+.title>small{font-size:13px}
+
+.changes span,.data-status>div>span{font-size:12px}
+.changes strong{font-size:26px}
+.changes strong small{font-size:12px}
+.changes .pending{font-size:19px}
+.changes p{font-size:12px;line-height:1.55}
+
+.health-badge{font-size:13px}
+.health-checks strong{font-size:15px}
+.health-checks b{font-size:13px}
+.health-checks small{font-size:12px;line-height:1.55;margin-top:2px}
+
+.period-row{font-size:13px}
+.period-row small{font-size:12px}
+.age-mix p{font-size:13px}
+.age-mix small{font-size:12px}
+.axis-y,.axis-x{font-size:11px}
+
+.categories p{font-size:13px}
+.categories small,.method{font-size:12px;line-height:1.65}
+.data-status li{font-size:12px}
+.data-status>p{font-size:12px;line-height:1.65}
+
+.mover>span:nth-child(2),.fair-row>span:nth-child(2){font-size:13px}
+.mover small,.fair-row small{font-size:11px}
+.empty b{font-size:14px}
+.empty p{font-size:12px;line-height:1.55}
+.row .rank{font-size:12px}
+.row b{font-size:14px}
+.row small{font-size:12px}
+
+.ledger-notes b{font-size:13px}
+.ledger-notes span,.ledger-note,.ledger-note-caution{font-size:12px;line-height:1.6}
+.ledger-tools input,.ledger-tools select,#curveSelect{font-size:13px}
+table{font-size:13px;line-height:1.55}
+th,td{padding:12px 9px}
+.state{font-size:12px}
+
+.record-strip>div>span,.record-strip>small{font-size:12px}
+.record-strip p,.record-strip small{font-size:13px}
+
+.chart-toolbar,.range-switch button{font-size:12px}
+footer{font-size:13px}
+
+@media(max-width:800px){
+  body{font-size:16px}
+  .title h2{font-size:22px}
+  table{font-size:13px}
+}
+
+@media(max-width:520px){
+  body{font-size:16px;line-height:1.7}
+  .brand strong{font-size:19px}
+  .stat strong{font-size:26px}
+  .stat small{font-size:12px}
+  .follow strong{font-size:24px}
+  .title h2{font-size:21px}
+  .changes strong{font-size:22px}
+  .changes p{font-size:12px}
+  .health-checks b{font-size:13px}
+  .health-checks strong{font-size:14px}
+  .health-checks small{font-size:12px}
+  table{font-size:13px}
+  th:first-child,td:first-child{min-width:250px}
+  .method,.categories small,.data-status li,.data-status>p{font-size:12px}
+}
