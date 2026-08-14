@@ -13,6 +13,21 @@
     }
     return missing;
   }
+  function collectionTimeStatus(collectedAt){
+    const dt=new Date(collectedAt);
+    if(Number.isNaN(dt.getTime()))return {ok:false,text:"取得時刻を確認できません"};
+    const parts=new Intl.DateTimeFormat("ja-JP",{timeZone:"Asia/Tokyo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(dt);
+    const hour=Number(parts.find(part=>part.type==="hour")?.value);
+    const minute=Number(parts.find(part=>part.type==="minute")?.value);
+    if(!Number.isFinite(hour)||!Number.isFinite(minute))return {ok:false,text:"取得時刻を確認できません"};
+    const value=hour*60+minute;
+    const start=5*60+30;
+    const end=9*60;
+    const hhmm=`${String(hour).padStart(2,"0")}:${String(minute).padStart(2,"0")}`;
+    return value>=start&&value<=end
+      ? {ok:true,text:`${hhmm} JST（通常範囲 05:30〜09:00）`}
+      : {ok:false,text:`${hhmm} JST（通常範囲 05:30〜09:00 から外れています）`};
+  }
 
   window.renderHealth=function(data,latest){
     const summaries=data.summaries||[];
@@ -20,6 +35,7 @@
     const stale=!Number.isFinite(latestMs)||Date.now()-latestMs>36*3600000;
     const duplicateDates=new Set(summaries.map(rowDate)).size!==summaries.length;
     const missing=missingDates(summaries);
+    const timeStatus=collectionTimeStatus(latest.collectedAt);
     const decreasing=summaries.some((row,index)=>index&&(
       row.totalPv<summaries[index-1].totalPv||
       row.totalLikes<summaries[index-1].totalLikes||
@@ -29,6 +45,7 @@
     const missingText=missing.length?`欠測: ${missing.slice(0,3).join("、")}${missing.length>3?` ほか${missing.length-3}日`:""}`:"記録開始後の日付欠けなし";
     const checks=[
       ["最新性",stale?"注意":"正常",stale?"最終取得から36時間以上経過":"最終取得は36時間以内"],
+      ["取得時刻",timeStatus.ok?"正常":"注意",timeStatus.text],
       ["累計値",decreasing?"注意":"正常",decreasing?"前回より小さい累計値があります":"PV・スキ・コメントに逆行なし"],
       ["記事数",countDrop?"注意":"正常",countDrop?"記録記事数が減った日があります":"記事数の減少なし"],
       ["日付重複",duplicateDates?"注意":"正常",duplicateDates?"同じ日付の記録が重複":"日付の重複なし"],
