@@ -1,6 +1,6 @@
-/* Sky Compass motif layer — design branch only */
+/* Sky Compass brand icon only — design branch */
 
-/* Background: keep only the observatory grid from observatory.css. */
+/* Background stays as the observatory grid from observatory.css. */
 body::after{display:none}
 
 .brand>b{
@@ -31,49 +31,7 @@ body::after{display:none}
 body.dark .brand .sky-light{display:none}
 body.dark .brand .sky-dark{display:block}
 
-.title::before{display:none}
-
-.title::after{
-  width:64px;
-  height:1px;
-  background:linear-gradient(90deg,
-    color-mix(in srgb,var(--obs-cyan) 72%,transparent),
-    color-mix(in srgb,var(--obs-violet) 44%,transparent),
-    transparent);
-}
-
-.analysis-grid,
-.article-ledger,
-.dormant-panel,
-.fair{
-  position:relative;
-}
-
-.analysis-grid::after,
-.article-ledger::after,
-.dormant-panel::after,
-.fair::after{
-  content:"";
-  position:absolute;
-  left:14%;
-  right:14%;
-  bottom:-10px;
-  height:1px;
-  pointer-events:none;
-  opacity:.32;
-  background:linear-gradient(90deg,
-    transparent,
-    color-mix(in srgb,var(--obs-cyan) 18%,transparent) 18%,
-    color-mix(in srgb,var(--obs-cyan) 28%,transparent) 50%,
-    color-mix(in srgb,var(--obs-violet) 18%,transparent) 82%,
-    transparent);
-}
-
 @media(max-width:520px){
   .brand>b{width:38px;height:38px;flex-basis:38px}
   .brand>b img{width:36px;height:36px}
-  .analysis-grid::after,
-  .article-ledger::after,
-  .dormant-panel::after,
-  .fair::after{left:22%;right:22%}
 }
