@@ -297,14 +297,16 @@ function renderArticleMap(items) {
   const mapItems = items.filter(article => article.pv > 0);
   const maxPv = Math.max(...mapItems.map(article => article.pv), 1);
   const maxRate = Math.max(...mapItems.map(article => (article.likes + article.comments) / article.pv), 0.01);
+  const points = mapItems.map(article => {
+    const rate = (article.likes + article.comments) / article.pv;
+    const x = Math.sqrt(article.pv / maxPv) * 92 + 3;
+    const y = 94 - rate / maxRate * 88;
+    const label = `${article.title}｜${article.pv} PV｜反応率 ${(rate * 100).toFixed(1)}%`;
+    return `<a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(label)}"><title>${esc(label)}</title><circle class="point" cx="${x}" cy="${y}" r="1.1"></circle></a>`;
+  }).join("");
   $("#articleMap").innerHTML =
     '<div class="axis-y">反応率 高</div><div class="axis-x">PV 高 →</div>' +
-    mapItems.map(article => {
-      const rate = (article.likes + article.comments) / article.pv;
-      const x = Math.sqrt(article.pv / maxPv) * 92 + 3;
-      const y = 94 - rate / maxRate * 88;
-      return `<a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer" class="point" style="left:${x}%;top:${y}%" title="${esc(article.title)}｜${article.pv} PV｜反応率 ${(rate * 100).toFixed(1)}%"></a>`;
-    }).join("");
+    `<svg class="article-map-svg" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="記事ごとのPVと反応率の分布">${points}</svg>`;
 }
 
 function renderGrowthCurve(data, items, latest) {
