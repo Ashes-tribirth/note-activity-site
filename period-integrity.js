@@ -86,14 +86,14 @@
   };
 
   window.renderLedger=function(allItems,dormant,historyDates){
-    const dormantKeys=new Set(dormant.map(article=>article.key)),categories=[...new Set(allItems.map(article=>article.category))].sort(),mode=state.mode;
+    const dormantKeys=new Set(dormant.map(article=>article.key)),categories=[...new Set(allItems.map(article=>article.category).filter(Boolean))].sort(),mode=state.mode;
     $("#categoryFilter").innerHTML='<option value="">すべての分類</option>'+categories.map(category=>`<option>${esc(category)}</option>`).join("");
     const draw=()=>{
       const query=$("#ledgerSearch").value.toLowerCase(),category=$("#categoryFilter").value,status=$("#statusFilter").value;
       const rows=allItems.map(article=>{const dormantState=dormantKeys.has(article.key),statusValue=mode==="gap"||mode==="waiting"?"pending":dormantState?"dormant":"active",statusLabel=mode==="exact"?(dormantState?"7日間動きなし":"動きあり"):mode==="provisional"?`暫定・${dormantState?"動きなし":"動きあり"}`:"記録中";return {...article,d1pv:article.d1.pv,d7pv:article.d7.pv,rate:(article.likes+article.comments)/Math.max(1,article.pv),status:statusValue,statusLabel}})
         .filter(article=>(!query||article.title.toLowerCase().includes(query))&&(!category||article.category===category)&&(!status||(status==="active"?article.status==="active":status==="dormant"?article.status==="dormant":true)))
         .sort((a,b)=>{const x=a[ledgerSort.key]??"",y=b[ledgerSort.key]??"";return (typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y),"ja"))*ledgerSort.dir});
-      $("#ledgerBody").innerHTML=rows.map(article=>`<tr><td><a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a></td><td>${esc(article.category)}</td><td>${article.publishedAt?article.publishedAt.slice(0,10):"—"}</td><td>${fmt.format(article.pv)}</td><td>${fmt.format(article.likes)}</td><td>${fmt.format(article.comments)}</td><td>${signed(article.d1pv)}</td><td>${article.d7pv==null?"記録中":signed(article.d7pv)}</td><td>${(article.rate*100).toFixed(1)}%</td><td><span class="state ${article.status}">${article.statusLabel}</span></td></tr>`).join("");
+      $("#ledgerBody").innerHTML=rows.map(article=>`<tr><td><a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a></td><td>${article.category?esc(article.category):"—"}</td><td>${article.publishedAt?article.publishedAt.slice(0,10):"—"}</td><td>${fmt.format(article.pv)}</td><td>${fmt.format(article.likes)}</td><td>${fmt.format(article.comments)}</td><td>${signed(article.d1pv)}</td><td>${article.d7pv==null?"記録中":signed(article.d7pv)}</td><td>${(article.rate*100).toFixed(1)}%</td><td><span class="state ${article.status}">${article.statusLabel}</span></td></tr>`).join("");
     };
     $("#ledgerSearch").oninput=draw;$("#categoryFilter").onchange=draw;$("#statusFilter").onchange=draw;document.querySelectorAll("[data-sort]").forEach(header=>{header.onclick=()=>{const key=header.dataset.sort;if(ledgerSort.key===key)ledgerSort.dir*=-1;else ledgerSort={key,dir:["title","category","publishedAt"].includes(key)?1:-1};draw()}});draw();
   };
@@ -101,8 +101,8 @@
   const originalCategories=window.renderCategories;
   window.renderCategories=function(items,dormantKeys){
     if(state.mode!=="gap"&&state.mode!=="waiting")return originalCategories(items,dormantKeys);
-    const categories=new Map();items.forEach(article=>{const entry=categories.get(article.category)||{name:article.category,count:0,pv:0,likes:0};entry.count++;entry.pv+=article.pv;entry.likes+=article.likes;categories.set(article.category,entry)});
-    const order=["音楽・曲","エッセイ・日常","note・ツール","孫子・思考","ゲーム・趣味","その他","要確認"],rows=order.filter(name=>name!=="要確認"||categories.has(name)).map(name=>categories.get(name)||{name,count:0,pv:0,likes:0}),top=Math.max(...rows.map(row=>row.count),1);
+    const categories=new Map();items.filter(article=>article.category).forEach(article=>{const entry=categories.get(article.category)||{name:article.category,count:0,pv:0,likes:0};entry.count++;entry.pv+=article.pv;entry.likes+=article.likes;categories.set(article.category,entry)});
+    const order=["音楽・曲","エッセイ・日常","note・ツール","孫子・思考","ゲーム・趣味","その他"],rows=order.map(name=>categories.get(name)||{name,count:0,pv:0,likes:0}),top=Math.max(...rows.map(row=>row.count),1);
     $("#categories").innerHTML=rows.map(row=>`<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり 判定中</span></p><i><b style="width:${row.count/top*100}%"></b></i><small>${fmt.format(row.pv)} PV ・ スキ率 ${(row.likes/Math.max(row.pv,1)*100).toFixed(1)}% ・ 直近7日PV 記録中</small></div>`).join("");
   };
 })();
