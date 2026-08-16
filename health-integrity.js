@@ -29,6 +29,17 @@
       : {ok:false,text:`${hhmm} JST（通常範囲 05:30〜09:00 から外れています）`};
   }
 
+  function articleValueReversals(data){
+    const byDate=new Map();
+    (data.articleHistory||[]).forEach(row=>{const date=rowDate(row);if(!date)return;if(!byDate.has(date))byDate.set(date,new Map());byDate.get(date).set(row.key,row)});
+    const dates=[...byDate.keys()].sort();let count=0;
+    for(let index=1;index<dates.length;index++){
+      const before=byDate.get(dates[index-1]),now=byDate.get(dates[index]);
+      now.forEach((row,key)=>{const old=before.get(key);if(old&&["pv","likes","comments"].some(field=>Number(row[field]||0)<Number(old[field]||0)))count++});
+    }
+    return count;
+  }
+
   window.renderHealth=function(data,latest){
     const summaries=data.summaries||[];
     const latestMs=Date.parse(latest.collectedAt);
@@ -36,23 +47,22 @@
     const duplicateDates=new Set(summaries.map(rowDate)).size!==summaries.length;
     const missing=missingDates(summaries);
     const timeStatus=collectionTimeStatus(latest.collectedAt);
-    const decreasing=summaries.some((row,index)=>index&&(
-      row.totalPv<summaries[index-1].totalPv||
-      row.totalLikes<summaries[index-1].totalLikes||
-      row.totalComments<summaries[index-1].totalComments
-    ));
-    const countDrop=summaries.some((row,index)=>index&&row.articleCount<summaries[index-1].articleCount);
+    const reversals=articleValueReversals(data);
+    const latestDate=rowDate(latest),latestHistory=(data.articleHistory||[]).filter(row=>rowDate(row)===latestDate),latestArticles=data.articles||[];
+    const countMismatch=latestHistory.length!==latestArticles.length||Number(latest.articleCount)!==latestArticles.length;
+    const totalMismatch=[["pv","totalPv"],["likes","totalLikes"],["comments","totalComments"]].some(([field,total])=>latestArticles.reduce((sum,row)=>sum+Number(row[field]||0),0)!==Number(latest[total]));
     const missingText=missing.length?`欠測: ${missing.slice(0,3).join("、")}${missing.length>3?` ほか${missing.length-3}日`:""}`:"記録開始後の日付欠けなし";
     const checks=[
       ["最新性",stale?"注意":"正常",stale?"最終取得から36時間以上経過":"最終取得は36時間以内"],
       ["取得時刻",timeStatus.ok?"正常":"注意",timeStatus.text],
-      ["累計値",decreasing?"注意":"正常",decreasing?"前回より小さい累計値があります":"PV・スキ・コメントに逆行なし"],
-      ["記事数",countDrop?"注意":"正常",countDrop?"記録記事数が減った日があります":"記事数の減少なし"],
+      ["記事別累計",reversals?"注意":"正常",reversals?`${reversals}記事で前回値から逆行しています`:"同じ記事のPV・スキ・コメントに逆行なし"],
+      ["記事件数",countMismatch?"注意":"正常",countMismatch?"最新の一覧・履歴・集計で件数が一致しません":`${latestArticles.length}記事で一覧・履歴・集計が一致`],
+      ["集計値",totalMismatch?"注意":"正常",totalMismatch?"記事合計と最新集計が一致しません":"記事合計と最新集計が一致"],
       ["日付重複",duplicateDates?"注意":"正常",duplicateDates?"同じ日付の記録が重複":"日付の重複なし"],
       ["日付欠測",missing.length?"注意":"正常",missingText],
     ];
     const warnings=checks.filter(row=>row[1]==="注意").length;
-    $("#healthBadge").textContent=warnings?`${warnings}件 要確認`:"異常なし";
+    $("#healthBadge").textContent=warnings?`${warnings}件 注意`:"異常なし";
     $("#healthBadge").classList.toggle("warn",!!warnings);
     $("#healthChecks").innerHTML=checks.map(row=>`<div class="${row[1]==="正常"?"ok":"warn"}"><b>${esc(row[0])}</b><strong>${row[1]}</strong><small>${esc(row[2])}</small></div>`).join("");
   };
