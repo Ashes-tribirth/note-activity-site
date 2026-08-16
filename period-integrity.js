@@ -102,7 +102,7 @@
   window.renderCategories=function(items,dormantKeys){
     if(state.mode!=="gap"&&state.mode!=="waiting")return originalCategories(items,dormantKeys);
     const categories=new Map();items.filter(article=>article.category).forEach(article=>{const entry=categories.get(article.category)||{name:article.category,count:0,pv:0,likes:0};entry.count++;entry.pv+=article.pv;entry.likes+=article.likes;categories.set(article.category,entry)});
-    const order=["音楽・曲","エッセイ・日常","note・ツール","孫子・思考","ゲーム・趣味","その他"],rows=order.map(name=>categories.get(name)||{name,count:0,pv:0,likes:0});
-    $("#categories").innerHTML=rows.map(row=>`<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり 判定中</span></p><small>${fmt.format(row.pv)} PV ・ スキ率 ${(row.likes/Math.max(row.pv,1)*100).toFixed(1)}% ・ 直近7日PV 記録中</small></div>`).join("");
+    const order=["音楽・曲","エッセイ・日常","note・ツール","孫子・思考","ゲーム・趣味","その他"],totalCount=items.filter(article=>article.category).length,rows=order.map(name=>categories.get(name)||{name,count:0,pv:0,likes:0});
+    $("#categories").innerHTML=rows.map(row=>`<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり 判定中</span></p>${categoryShareBar(row.count,totalCount,row.name)}<small>構成比 ${(row.count/Math.max(totalCount,1)*100).toFixed(1)}% ・ ${fmt.format(row.pv)} PV ・ スキ率 ${(row.likes/Math.max(row.pv,1)*100).toFixed(1)}% ・ 直近7日PV 記録中</small></div>`).join("");
   };
 })();
