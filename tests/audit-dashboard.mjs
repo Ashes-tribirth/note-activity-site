@@ -24,5 +24,9 @@ assert(source["app.js"].includes("pvPerArticle = Number(row.d7 || 0) / Math.max(
 assert(source["app.js"].includes('<svg class="mixbar"'), "記事年齢の構成比がSVG化されていません");
 assert(source["charts.js"].includes("const factor = intervalHours && intervalHours > 0 ? 24 / intervalHours : 1"), "活動量が24時間換算されていません");
 assert(source["index.html"].includes("累計PV ÷ 公開日数"), "平均PVペースの計算根拠が画面にありません");
+assert(!source["index.html"].includes("charts.css"), "空のcharts.css参照が残っています");
+assert(!source["period-integrity.js"].includes("window.render"), "描画関数の後付け上書きが残っています");
+assert(!source["health-integrity.js"].includes("window.render"), "健全性描画の後付け上書きが残っています");
+assert.equal((source["app.js"].match(/function renderHealth/g) || []).length, 0, "app.jsに旧健全性実装が残っています");
 
 console.log(`dashboard audit passed: ${ids.length} unique ids, no CSP-inline conflicts`);
