@@ -190,10 +190,11 @@ function renderCategories(items, dormantKeys) {
   const categories = new Map();
   items.filter(article => article.category).forEach(article => {
     const active = !dormantKeys.has(article.key);
-    const entry = categories.get(article.category) || { name: article.category, count: 0, active: 0, pv: 0, likes: 0, d7: 0 };
+    const entry = categories.get(article.category) || { name: article.category, count: 0, active: 0, pv: 0, likes: 0, comments: 0, d7: 0 };
     entry.count += 1;
     entry.pv += article.pv;
     entry.likes += article.likes;
+    entry.comments += article.comments;
     if (active) {
       entry.active += 1;
       entry.d7 += article.d7.pv;
@@ -204,15 +205,25 @@ function renderCategories(items, dormantKeys) {
   const order = ["音楽・曲", "エッセイ・日常", "note・ツール", "孫子・思考", "ゲーム・趣味", "その他"];
   const totalCount = items.filter(article => article.category).length;
   const rows = order
-    .map(name => categories.get(name) || { name, count: 0, active: 0, pv: 0, likes: 0, d7: 0 });
+    .map(name => categories.get(name) || { name, count: 0, active: 0, pv: 0, likes: 0, comments: 0, d7: 0 });
   $("#categories").innerHTML = rows.map(row =>
-    `<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり ${row.active}</span></p>${categoryShareBar(row.count, totalCount, row.name)}<small>構成比 ${(row.count / Math.max(totalCount, 1) * 100).toFixed(1)}% ・ ${fmt.format(row.pv)} PV ・ スキ率 ${(row.likes / Math.max(row.pv, 1) * 100).toFixed(1)}% ・ 直近 ${signed(row.d7)} PV</small></div>`
+    `<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり ${row.active}</span></p>${categoryShareBar(row.count, totalCount, row.name)}${categoryMetrics(row, totalCount)}</div>`
   ).join("");
 }
 
 function categoryShareBar(count, total, name) {
   const share = count / Math.max(total, 1) * 100;
   return `<svg class="category-share" viewBox="0 0 100 5" preserveAspectRatio="none" role="img" aria-label="${esc(name)}は全${total}記事中${count}記事、構成比${share.toFixed(1)}%"><rect class="category-track" x="0" y="0" width="100" height="5"></rect><rect class="category-fill" x="0" y="0" width="${share}" height="5"><title>${esc(name)} ${count}記事／全${total}記事（${share.toFixed(1)}%）</title></rect></svg>`;
+}
+
+function categoryMetrics(row, totalCount) {
+  const pv = Math.max(Number(row.pv) || 0, 0);
+  const count = Math.max(Number(row.count) || 0, 0);
+  const share = count / Math.max(totalCount, 1) * 100;
+  const likeRate = Number(row.likes || 0) / Math.max(pv, 1) * 100;
+  const commentRate = Number(row.comments || 0) / Math.max(pv, 1) * 100;
+  const pvPerArticle = Number(row.d7 || 0) / Math.max(count, 1);
+  return `<dl class="category-metrics"><div><dt>構成比</dt><dd>${share.toFixed(1)}%</dd></div><div><dt>スキ率</dt><dd>${likeRate.toFixed(1)}%</dd></div><div><dt>コメント率</dt><dd>${commentRate.toFixed(1)}%</dd></div><div><dt>記録PV／記事</dt><dd>${pvPerArticle.toFixed(1)}</dd></div></dl>`;
 }
 
 function renderHealth(data, latest) {
