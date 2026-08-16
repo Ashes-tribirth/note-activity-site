@@ -9,13 +9,14 @@
 <meta name="description" content="note活動の実態と進捗を、保存した数値から正確に確認するダッシュボード">
 <link rel="stylesheet" href="./style.css?v=20260815a">
 <link rel="stylesheet" href="./charts.css">
+<link rel="stylesheet" href="./activity.css?v=20260816a">
 <link rel="stylesheet" href="./typography.css">
 <link rel="stylesheet" href="./observatory.css">
 <link rel="stylesheet" href="./sky-compass-motif.css">
-<script src="./app.js?v=20260815a" defer></script>
-<script src="./period-integrity.js" defer></script>
+<script src="./app.js?v=20260816a" defer></script>
+<script src="./period-integrity.js?v=20260816a" defer></script>
 <script src="./health-integrity.js" defer></script>
-<script src="./charts.js" defer></script>
+<script src="./charts.js?v=20260816a" defer></script>
 </head>
 <body>
 <main>
@@ -25,7 +26,7 @@
 <section id="changes" class="changes"></section>
 <section id="stats" class="stats"></section>
 <section class="follow follow-with-chart"><div><span>CONNECTION TREND</span><h2>つながりの推移</h2><small>毎朝自動記録</small></div><div><span>FOLLOWING</span><strong id="following">—</strong><small>フォロー中</small></div><div class="featured"><span>FOLLOWERS</span><strong id="followers">—</strong><small>フォロワー</small></div><div><span>前回取得から</span><strong id="followDiff">記録中</strong><small>フォロワー</small></div><div class="chart-toolbar" data-chart="follow"><span>表示範囲</span><div class="range-switch" role="group" aria-label="つながりの推移の表示範囲"><button type="button" data-range="30" class="active" aria-pressed="true">30日</button><button type="button" data-range="90" aria-pressed="false">90日</button><button type="button" data-range="all" aria-pressed="false">全期間</button></div></div><div id="followChart" class="history-chart follow-history-chart" aria-label="フォロー数とフォロワー数の推移"></div></section>
-<section class="panel trend"><div class="title"><div><span>ACTIVITY HISTORY</span><h2>活動の推移</h2></div><small id="days">記録 —日目</small></div><div class="chart-toolbar" data-chart="activity"><span>表示範囲</span><div class="range-switch" role="group" aria-label="活動の推移の表示範囲"><button type="button" data-range="30" class="active" aria-pressed="true">30日</button><button type="button" data-range="90" aria-pressed="false">90日</button><button type="button" data-range="all" aria-pressed="false">全期間</button></div></div><div id="trendBars" class="bars history-chart" aria-label="累計PV・スキ・コメントの推移"></div><p id="trendNote">データを読み込んでいます</p></section>
+<section class="panel trend"><div class="title"><div><span>ACTIVITY HISTORY</span><h2>活動の推移</h2></div><small id="days">記録 —日目</small></div><div class="chart-toolbar" data-chart="activity"><span>表示範囲</span><div class="range-switch" role="group" aria-label="活動の推移の表示範囲"><button type="button" data-range="30" class="active" aria-pressed="true">30日</button><button type="button" data-range="90" aria-pressed="false">90日</button><button type="button" data-range="all" aria-pressed="false">全期間</button></div></div><div id="trendBars" class="activity-history" aria-label="前回取得からのPV・スキ・コメント増加量"></div><p id="trendNote">データを読み込んでいます</p></section>
 <section class="grid analysis-grid">
 <article class="panel"><div class="title"><div><span>PERIOD COMPARISON</span><h2>同じ長さの期間で比較</h2></div><small>直近 vs その前</small></div><div id="periodCompare" class="period-compare"></div></article>
 <article class="panel"><div class="title"><div><span>PV COMPOSITION</span><h2>伸びを記事年齢で分解</h2></div><small>前回取得からの増加PV</small></div><div id="ageMix" class="age-mix"></div></article>
