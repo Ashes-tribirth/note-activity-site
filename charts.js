@@ -124,7 +124,19 @@
       }, { pv: 0, likes: 0, comments: 0 });
       const start = asDate(previous);
       const end = asDate(current);
-      return { ...delta, date: currentDate, collectedAt: current.collectedAt, intervalHours: start && end ? (end - start) / 3600000 : null };
+      const intervalHours = start && end ? (end - start) / 3600000 : null;
+      const factor = intervalHours && intervalHours > 0 ? 24 / intervalHours : 1;
+      return {
+        actualPv: delta.pv,
+        actualLikes: delta.likes,
+        actualComments: delta.comments,
+        pv: delta.pv * factor,
+        likes: delta.likes * factor,
+        comments: delta.comments * factor,
+        date: currentDate,
+        collectedAt: current.collectedAt,
+        intervalHours,
+      };
     });
   }
 
@@ -139,12 +151,12 @@
     let svg = `<section class="activity-metric"><h3>${esc(label)}</h3><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="前回取得からの${esc(label)}">`;
     svg += `<line class="grid-line" x1="${pad.l}" y1="${zeroY}" x2="${width - pad.r}" y2="${zeroY}"></line>`;
     rows.forEach((row, index) => {
-      const value = values[index], x = pad.l + step * index + (step - barWidth) / 2;
+      const value = values[index], displayValue = Math.round(value), actualKey = `actual${key[0].toUpperCase()}${key.slice(1)}`, actual = Number(row[actualKey] || 0), x = pad.l + step * index + (step - barWidth) / 2;
       const valueY = pad.t + (high - value) / span * usableHeight, y = Math.min(zeroY, valueY);
       const barHeight = Math.max(1, Math.abs(zeroY - valueY));
       const interval = row.intervalHours == null ? "取得間隔不明" : `前回から${row.intervalHours.toFixed(1)}時間`;
-      svg += `<rect class="activity-bar ${cls}" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}"><title>${esc(label)} ${esc(labelDate(row.date))}: ${value >= 0 ? "+" : ""}${esc(fmt.format(value))}（${esc(interval)}）</title></rect>`;
-      svg += `<text class="point-label" x="${x + barWidth / 2}" y="${Math.max(11, y - 4)}" text-anchor="middle">${value >= 0 ? "+" : ""}${esc(fmt.format(value))}</text>`;
+      svg += `<rect class="activity-bar ${cls}" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}"><title>${esc(label)} ${esc(labelDate(row.date))}: 24時間換算 ${displayValue >= 0 ? "+" : ""}${esc(fmt.format(displayValue))}／実測 ${actual >= 0 ? "+" : ""}${esc(fmt.format(actual))}（${esc(interval)}）</title></rect>`;
+      svg += `<text class="point-label" x="${x + barWidth / 2}" y="${Math.max(11, y - 4)}" text-anchor="middle">${displayValue >= 0 ? "+" : ""}${esc(fmt.format(displayValue))}</text>`;
       svg += `<text class="axis-label" x="${x + barWidth / 2}" y="${height - 7}" text-anchor="middle">${esc(labelDate(row.date))}</text>`;
     });
     return `${svg}</svg></section>`;
@@ -163,7 +175,7 @@
     const note = $("#trendNote");
     if (!note) return;
     note.textContent = rows.length
-      ? `選択範囲：${rangeLabel(state.activityRange)}／表示 ${rows.length}区間。棒は前回取得からの実測増加量です。取得間隔は各棒に触れると確認できます。`
+      ? `選択範囲：${rangeLabel(state.activityRange)}／表示 ${rows.length}区間。棒は比較できるよう24時間換算しています。実測値と取得間隔は各棒に触れると確認できます。`
       : `選択範囲：${rangeLabel(state.activityRange)}。増加量は記録中です。`;
   }
 
