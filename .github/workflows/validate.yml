@@ -1,0 +1,26 @@
+name: Validate dashboard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check charts.js
+          node --check period-integrity.js
+          node --check health-integrity.js
+      - name: Audit dashboard integrity
+        run: node tests/audit-dashboard.mjs
