@@ -17,6 +17,8 @@ assert(csp.includes("style-src 'self'"), "CSPのstyle-srcがself限定ではあ�
 assert(!csp.includes("'unsafe-inline'"), "CSPでunsafe-inlineを許可しています");
 
 assert(!source["app.js"].includes("<i><b style="), "記事タイプ別に無効な棒グラフが残っています");
+assert(source["app.js"].includes('<svg class="category-share"'), "記事タイプ別の構成比がSVG化されていません");
+assert(source["app.js"].includes("count / Math.max(total, 1) * 100"), "記事タイプ別の棒が全記事数を分母にしていません");
 assert(source["app.js"].includes('<svg class="mixbar"'), "記事年齢の構成比がSVG化されていません");
 assert(source["charts.js"].includes("const factor = intervalHours && intervalHours > 0 ? 24 / intervalHours : 1"), "活動量が24時間換算されていません");
 assert(source["index.html"].includes("累計PV ÷ 公開日数"), "平均PVペースの計算根拠が画面にありません");
