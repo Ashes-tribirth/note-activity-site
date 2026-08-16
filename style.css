@@ -23,6 +23,7 @@ html{font-size:16px}body{font-family:"Meiryo UI","Yu Gothic UI","Noto Sans JP",-
 .age-mix svg.mixbar{display:block;width:100%;height:12px}
 .categories>div{padding-bottom:15px;border-bottom:1px solid var(--line)}.categories>div:last-child{border-bottom:0}.categories>div>small{display:block;margin-top:6px}
 .category-share{display:block;width:100%;height:5px;margin:9px 0 7px;border-radius:999px;overflow:hidden}.category-track{fill:#71809818}.category-fill{fill:var(--blue)}body.dark .category-fill{fill:#74adff}
+.category-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 0}.category-metrics>div{padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:#3988e808}.category-metrics dt{color:var(--muted);font-size:10px}.category-metrics dd{margin:2px 0 0;font-size:15px;font-weight:700;color:var(--ink)}@media(max-width:520px){.category-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .health-checks strong,.actions b{font-size:14px}
 .article-ledger table,.dormant-panel table{font-size:12px}
 .article-ledger th,.article-ledger td,.dormant-panel th,.dormant-panel td{padding:11px 9px}
