@@ -43,8 +43,8 @@ function empty(title, text) {
   return `<div class="empty"><i>◌</i><div><b>${esc(title)}</b><p>${esc(text)}</p></div></div>`;
 }
 
-function stat(label, value, note, color) {
-  return `<article class="stat" style="--c:${color}"><span>${label}</span><strong>${fmt.format(value)}</strong><small>${note}</small><i></i></article>`;
+function stat(label, value, note, colorClass) {
+  return `<article class="stat stat-${colorClass}"><span>${label}</span><strong>${fmt.format(value)}</strong><small>${note}</small><i></i></article>`;
 }
 
 function change(label, value, sub, ready, unit) {
@@ -164,10 +164,10 @@ function renderHeaderAndTotals(data, latest, previous, intervalLabel) {
     change("フォロワー前回比", followerReady ? Number(follow.followerCount) - Number(previousFollow.followerCount) : 0, `現在 ${fmt.format(Number(follow.followerCount) || 0)}人`, followerReady, "人");
 
   $("#stats").innerHTML =
-    stat("TOTAL PV", latest.totalPv, "累計閲覧数", "#3988e8") +
-    stat("LIKES", latest.totalLikes, `平均 ${(latest.totalLikes / latest.articleCount).toFixed(1)} / 記事`, "#8b67dd") +
-    stat("COMMENTS", latest.totalComments, `平均 ${(latest.totalComments / latest.articleCount).toFixed(1)} / 記事`, "#e98b50") +
-    stat("ARTICLES", latest.articleCount, "記録対象", "#45a982");
+    stat("TOTAL PV", latest.totalPv, "累計閲覧数", "pv") +
+    stat("LIKES", latest.totalLikes, `平均 ${(latest.totalLikes / latest.articleCount).toFixed(1)} / 記事`, "likes") +
+    stat("COMMENTS", latest.totalComments, `平均 ${(latest.totalComments / latest.articleCount).toFixed(1)} / 記事`, "comments") +
+    stat("ARTICLES", latest.articleCount, "記録対象", "articles");
 
   $("#following").textContent = follow.followingCount == null ? "—" : fmt.format(follow.followingCount);
   $("#followers").textContent = follow.followerCount == null ? "—" : fmt.format(follow.followerCount);
@@ -204,10 +204,8 @@ function renderCategories(items, dormantKeys) {
   const order = ["音楽・曲", "エッセイ・日常", "note・ツール", "孫子・思考", "ゲーム・趣味", "その他"];
   const rows = order
     .map(name => categories.get(name) || { name, count: 0, active: 0, pv: 0, likes: 0, d7: 0 });
-  const top = Math.max(...rows.map(row => row.count), 1);
-
   $("#categories").innerHTML = rows.map(row =>
-    `<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり ${row.active}</span></p><i><b style="width:${row.count / top * 100}%"></b></i><small>${fmt.format(row.pv)} PV ・ スキ率 ${(row.likes / Math.max(row.pv, 1) * 100).toFixed(1)}% ・ 直近 ${signed(row.d7)} PV</small></div>`
+    `<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり ${row.active}</span></p><small>${fmt.format(row.pv)} PV ・ スキ率 ${(row.likes / Math.max(row.pv, 1) * 100).toFixed(1)}% ・ 直近 ${signed(row.d7)} PV</small></div>`
   ).join("");
 }
 
@@ -230,7 +228,7 @@ function renderHealth(data, latest) {
     ["日付", duplicateDates ? "注意" : "正常", duplicateDates ? "同じ日付の記録が重複" : "日付の重複なし"],
   ];
   const warnings = checks.filter(row => row[1] === "注意").length;
-  $("#healthBadge").textContent = warnings ? `${warnings}件 要確認` : "異常なし";
+  $("#healthBadge").textContent = warnings ? `${warnings}件 注意` : "異常なし";
   $("#healthBadge").classList.toggle("warn", !!warnings);
   $("#healthChecks").innerHTML = checks.map(row =>
     `<div class="${row[1] === "正常" ? "ok" : "warn"}"><b>${esc(row[0])}</b><strong>${row[1]}</strong><small>${esc(row[2])}</small></div>`
@@ -293,8 +291,15 @@ function renderAgeMix(items, latest) {
     groups[index].pv += Math.max(0, article.d1.pv);
   });
   const total = groups.reduce((sum, group) => sum + group.pv, 0);
+  let cursor = 0;
+  const segments = groups.map((group, index) => {
+    const width = group.pv / Math.max(total, 1) * 100;
+    const segment = `<rect class="mix-${index}" x="${cursor}" y="0" width="${width}" height="12"><title>${esc(group.name)} ${fmt.format(group.pv)}PV（${width.toFixed(1)}%）</title></rect>`;
+    cursor += width;
+    return segment;
+  }).join("");
   $("#ageMix").innerHTML = total
-    ? `<div class="mixbar">${groups.map((group, index) => `<i class="mix-${index}" style="width:${group.pv / total * 100}%" title="${group.name} ${group.pv}PV"></i>`).join("")}</div>${groups.map((group, index) => `<p><i class="dot mix-${index}"></i><span>${group.name}</span><b>${fmt.format(group.pv)} PV</b><small>${(group.pv / total * 100).toFixed(1)}%</small></p>`).join("")}`
+    ? `<svg class="mixbar" viewBox="0 0 100 12" preserveAspectRatio="none" role="img" aria-label="前回取得からの増加PVを記事の公開後日数で分解">${segments}</svg>${groups.map((group, index) => `<p><i class="dot mix-${index}"></i><span>${group.name}</span><b>${fmt.format(group.pv)} PV</b><small>${(group.pv / total * 100).toFixed(1)}%</small></p>`).join("")}`
     : empty("前回差を記録中", "2回分の記事履歴から内訳を表示します。");
 }
 
@@ -397,7 +402,7 @@ function renderPhaseOne(data, activeItems, dormant, latest, historyDates, allIte
   renderDormant(dormant, historyDates);
   renderAgeMix(activeItems, latest);
   renderArticleMap(activeItems);
-  renderGrowthCurve(data, activeItems, latest);
+  renderGrowthCurve(data, allItems, latest);
   renderLedger(allItems, dormant, historyDates);
 }
 
@@ -422,7 +427,7 @@ function render(data) {
   const dormantKeys = new Set(dormant.map(article => article.key));
   const activeItems = items.filter(article => !dormantKeys.has(article.key));
 
-  renderFairComparison(activeItems, latest);
+  renderFairComparison(items, latest);
   renderCategories(items, dormantKeys);
   renderPhaseOne(data, activeItems, dormant, latest, dates, items);
 
