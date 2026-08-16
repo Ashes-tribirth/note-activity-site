@@ -29,8 +29,14 @@ function initTheme() {
   $("#theme")?.addEventListener("click", () => setTheme(!document.body.classList.contains("dark"), true));
 }
 
+const REVIEWED_CATEGORY_OVERRIDES = {
+  n3445e9974c2c: "エッセイ・日常",
+};
+
 function categoryOf(article) {
-  return article.category || "要確認";
+  const key = article.key || String(article.url || "").split("/").pop();
+  if (REVIEWED_CATEGORY_OVERRIDES[key]) return REVIEWED_CATEGORY_OVERRIDES[key];
+  return article.category && article.category !== "要確認" ? article.category : "";
 }
 
 function empty(title, text) {
@@ -182,7 +188,7 @@ function renderFairComparison(activeItems, latest) {
 
 function renderCategories(items, dormantKeys) {
   const categories = new Map();
-  items.forEach(article => {
+  items.filter(article => article.category).forEach(article => {
     const active = !dormantKeys.has(article.key);
     const entry = categories.get(article.category) || { name: article.category, count: 0, active: 0, pv: 0, likes: 0, d7: 0 };
     entry.count += 1;
@@ -195,9 +201,8 @@ function renderCategories(items, dormantKeys) {
     categories.set(article.category, entry);
   });
 
-  const order = ["音楽・曲", "エッセイ・日常", "note・ツール", "孫子・思考", "ゲーム・趣味", "その他", "要確認"];
+  const order = ["音楽・曲", "エッセイ・日常", "note・ツール", "孫子・思考", "ゲーム・趣味", "その他"];
   const rows = order
-    .filter(name => name !== "要確認" || categories.has(name))
     .map(name => categories.get(name) || { name, count: 0, active: 0, pv: 0, likes: 0, d7: 0 });
   const top = Math.max(...rows.map(row => row.count), 1);
 
@@ -340,7 +345,7 @@ function renderGrowthCurve(data, items, latest) {
 
 function renderLedger(allItems, dormant, historyDates) {
   const dormantKeys = new Set(dormant.map(article => article.key));
-  const categories = [...new Set(allItems.map(article => article.category))].sort();
+  const categories = [...new Set(allItems.map(article => article.category).filter(Boolean))].sort();
   const finalStatus = historyDates.length >= 8;
   $("#categoryFilter").innerHTML = '<option value="">すべての分類</option>' + categories.map(category => `<option>${esc(category)}</option>`).join("");
 
@@ -368,7 +373,7 @@ function renderLedger(allItems, dormant, historyDates) {
       });
 
     $("#ledgerBody").innerHTML = rows.map(article =>
-      `<tr><td><a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a></td><td>${esc(article.category)}</td><td>${article.publishedAt ? article.publishedAt.slice(0, 10) : "—"}</td><td>${fmt.format(article.pv)}</td><td>${fmt.format(article.likes)}</td><td>${fmt.format(article.comments)}</td><td>${signed(article.d1pv)}</td><td>${signed(article.d7pv)}</td><td>${(article.rate * 100).toFixed(1)}%</td><td><span class="state ${article.status}">${article.statusLabel}</span></td></tr>`
+      `<tr><td><a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a></td><td>${article.category ? esc(article.category) : "—"}</td><td>${article.publishedAt ? article.publishedAt.slice(0, 10) : "—"}</td><td>${fmt.format(article.pv)}</td><td>${fmt.format(article.likes)}</td><td>${fmt.format(article.comments)}</td><td>${signed(article.d1pv)}</td><td>${signed(article.d7pv)}</td><td>${(article.rate * 100).toFixed(1)}%</td><td><span class="state ${article.status}">${article.statusLabel}</span></td></tr>`
     ).join("");
   };
 
