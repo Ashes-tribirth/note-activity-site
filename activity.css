@@ -1,0 +1,48 @@
+.activity-history {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.activity-metric {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #3988e806;
+}
+
+.activity-metric h3 {
+  margin: 0 0 2px;
+  font-size: 13px;
+}
+
+.activity-metric svg {
+  display: block;
+  width: 100%;
+  height: 128px;
+}
+
+.activity-metric .grid-line {
+  stroke: currentColor;
+  opacity: .16;
+  stroke-width: 1;
+}
+
+.activity-metric .axis-label,
+.activity-metric .point-label {
+  fill: currentColor;
+  opacity: .68;
+  font-size: 10px;
+}
+
+.activity-metric .point-label {
+  font-weight: 700;
+  opacity: .84;
+}
+
+.activity-bar { rx: 4px; }
+.activity-bar.pv { fill: var(--blue, #3988e8); }
+.activity-bar.likes { fill: var(--violet, #8b67dd); }
+.activity-bar.comments { fill: var(--orange, #e98b50); }
