@@ -7,16 +7,16 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>note Pulse</title>
 <meta name="description" content="note活動の実態と進捗を、保存した数値から正確に確認するダッシュボード">
-<link rel="stylesheet" href="./style.css?v=20260815a">
+<link rel="stylesheet" href="./style.css?v=20260816b">
 <link rel="stylesheet" href="./charts.css">
 <link rel="stylesheet" href="./activity.css?v=20260816a">
 <link rel="stylesheet" href="./typography.css">
 <link rel="stylesheet" href="./observatory.css">
 <link rel="stylesheet" href="./sky-compass-motif.css">
-<script src="./app.js?v=20260816a" defer></script>
-<script src="./period-integrity.js?v=20260816a" defer></script>
-<script src="./health-integrity.js" defer></script>
-<script src="./charts.js?v=20260816a" defer></script>
+<script src="./app.js?v=20260816b" defer></script>
+<script src="./period-integrity.js?v=20260816b" defer></script>
+<script src="./health-integrity.js?v=20260816b" defer></script>
+<script src="./charts.js?v=20260816b" defer></script>
 </head>
 <body>
 <main>
@@ -26,10 +26,10 @@
 <section id="changes" class="changes"></section>
 <section id="stats" class="stats"></section>
 <section class="follow follow-with-chart"><div><span>CONNECTION TREND</span><h2>つながりの推移</h2><small>毎朝自動記録</small></div><div><span>FOLLOWING</span><strong id="following">—</strong><small>フォロー中</small></div><div class="featured"><span>FOLLOWERS</span><strong id="followers">—</strong><small>フォロワー</small></div><div><span>前回取得から</span><strong id="followDiff">記録中</strong><small>フォロワー</small></div><div class="chart-toolbar" data-chart="follow"><span>表示範囲</span><div class="range-switch" role="group" aria-label="つながりの推移の表示範囲"><button type="button" data-range="30" class="active" aria-pressed="true">30日</button><button type="button" data-range="90" aria-pressed="false">90日</button><button type="button" data-range="all" aria-pressed="false">全期間</button></div></div><div id="followChart" class="history-chart follow-history-chart" aria-label="フォロー数とフォロワー数の推移"></div></section>
-<section class="panel trend"><div class="title"><div><span>ACTIVITY HISTORY</span><h2>活動の推移</h2></div><small id="days">記録 —日目</small></div><div class="chart-toolbar" data-chart="activity"><span>表示範囲</span><div class="range-switch" role="group" aria-label="活動の推移の表示範囲"><button type="button" data-range="30" class="active" aria-pressed="true">30日</button><button type="button" data-range="90" aria-pressed="false">90日</button><button type="button" data-range="all" aria-pressed="false">全期間</button></div></div><div id="trendBars" class="activity-history" aria-label="前回取得からのPV・スキ・コメント増加量"></div><p id="trendNote">データを読み込んでいます</p></section>
+<section class="panel trend"><div class="title"><div><span>ACTIVITY HISTORY</span><h2>活動の推移</h2></div><small id="days">記録 —日目</small></div><div class="chart-toolbar" data-chart="activity"><span>表示範囲</span><div class="range-switch" role="group" aria-label="活動の推移の表示範囲"><button type="button" data-range="30" class="active" aria-pressed="true">30日</button><button type="button" data-range="90" aria-pressed="false">90日</button><button type="button" data-range="all" aria-pressed="false">全期間</button></div></div><div id="trendBars" class="activity-history" aria-label="24時間換算したPV・スキ・コメント増加量"></div><p id="trendNote">データを読み込んでいます</p></section>
 <section class="grid analysis-grid">
 <article class="panel"><div class="title"><div><span>PERIOD COMPARISON</span><h2>同じ長さの期間で比較</h2></div><small>直近 vs その前</small></div><div id="periodCompare" class="period-compare"></div></article>
-<article class="panel"><div class="title"><div><span>PV COMPOSITION</span><h2>伸びを記事年齢で分解</h2></div><small>前回取得からの増加PV</small></div><div id="ageMix" class="age-mix"></div></article>
+<article class="panel"><div class="title"><div><span>PV COMPOSITION</span><h2>伸びを記事年齢で分解</h2></div><small>前回取得からの実測増加PV</small></div><div id="ageMix" class="age-mix"></div></article>
 </section>
 <section class="grid analysis-grid">
 <article class="panel"><div class="title"><div><span>ARTICLE MAP</span><h2>記事の現在地</h2></div><small>PV × 反応率</small></div><div id="articleMap" class="article-map" role="img" aria-label="記事のPVと反応率の分布"></div><p class="method">円に触れると記事名と数値を確認できます。反応率＝（スキ＋コメント）÷PV。</p></article>
@@ -37,7 +37,7 @@
 </section>
 <section class="panel article-ledger"><div class="title"><div><span>ARTICLE LEDGER</span><h2>公開中の記事分析表</h2></div><small>列見出しで並べ替え</small></div><div class="ledger-notes" aria-label="分析表の項目説明"><div><b>前回差PV</b><span>前回の収集時から増えたPV</span></div><div><b>7日PV</b><span>直近7日間で増えたPV</span></div><div><b>反応率</b><span>（スキ＋コメント）÷PV</span></div><div><b>状態</b><span>直近7日で数値が動いたか</span></div></div><p class="ledger-note-caution">※ 7日分の履歴が貯まるまでは、7日PV・状態は記録開始からの暫定値です。必要な日付が欠けた場合は推測せず「記録中」と表示します。</p><div class="ledger-tools"><input id="ledgerSearch" placeholder="記事名を検索" aria-label="分析表の記事名を検索"><select id="categoryFilter" aria-label="分類で絞り込む"><option value="">すべての分類</option></select><select id="statusFilter" aria-label="状態で絞り込む"><option value="">すべての状態</option><option value="active">動きあり</option><option value="dormant">7日間動きなし</option></select></div><div class="table-wrap"><table><thead><tr><th data-sort="title">記事</th><th data-sort="category">分類</th><th data-sort="publishedAt">公開日</th><th data-sort="pv">PV</th><th data-sort="likes">スキ</th><th data-sort="comments">コメント</th><th data-sort="d1pv">前回差PV</th><th data-sort="d7pv">7日PV</th><th data-sort="rate">反応率</th><th data-sort="status">状態</th></tr></thead><tbody id="ledgerBody"></tbody></table></div></section>
 <section class="panel dormant-panel"><div class="title"><div><span>DORMANT ARTICLES</span><h2>動きのない記事</h2></div><strong id="dormantCount">—</strong></div><p id="dormantBasis" class="method">直近7日間のPV・スキ・コメントで判定します。</p><div id="dormantSummary" class="dormant-summary"></div><p class="method">対象記事は「公開中の記事分析表」の状態フィルターで確認できます。</p></section>
-<section class="panel fair"><div class="title"><div><span>FAIR COMPARISON</span><h2>公開後の日数をそろえて比べる</h2></div><small>新旧記事を公平に</small></div><div id="fairList" class="fair-list"></div></section>
+<section class="panel fair"><div class="title"><div><span>LIFETIME PACE</span><h2>公開後の平均PVペース</h2></div><small>累計PV ÷ 公開日数</small></div><div id="fairList" class="fair-list"></div></section>
 <section class="panel"><div class="title"><div><span>CONTENT TYPES</span><h2>記事タイプ別の比較</h2></div><small>保存済み分類を優先</small></div><div id="categories" class="categories"></div><p class="method">現在公開中の記事を主題で1記事1分類に整理しています。「全」は公開中の記事数、「動きあり」は直近7日で数値が変化した記事数です。</p></section>
 <section class="data-status"><div><span>DATA STATUS</span><h2>この画面の数字について</h2></div><ul><li><b>最終取得</b><span id="lastFetched">—</span></li><li><b>更新頻度</b>毎朝6:20ごろ</li><li><b>記録状態</b><span id="dataState">接続確認中</span></li><li><b>比較方法</b>累計値の差から期間内の増加を算出</li></ul><p>日数が足りない比較は、推測値を出さず「記録中」と表示します。</p></section>
 <footer><b>note Pulse</b><small>Data since 2026.08.13</small></footer>
