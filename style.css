@@ -19,6 +19,9 @@ html{font-size:16px}body{font-family:"Meiryo UI","Yu Gothic UI","Noto Sans JP",-
 .brand small,.title span,.follow span,.stat>span,.record-strip span,.changes span,.data-status>div>span{font-size:12px}
 .status,.title>small,.stat small,.follow small,.record-strip small,.record-strip p{font-size:13px}
 .changes p,.health-checks small,.period-row,.age-mix p,.categories p,.categories small,.method,.data-status li,.data-status>p,.curve-chart+.method{font-size:12px}
+.stat-pv{--c:var(--blue)}.stat-likes{--c:var(--violet)}.stat-comments{--c:var(--orange)}.stat-articles{--c:var(--green)}
+.age-mix svg.mixbar{display:block;width:100%;height:12px}
+.categories>div{padding-bottom:15px;border-bottom:1px solid var(--line)}.categories>div:last-child{border-bottom:0}.categories>div>small{display:block;margin-top:6px}
 .health-checks strong,.actions b{font-size:14px}
 .article-ledger table,.dormant-panel table{font-size:12px}
 .article-ledger th,.article-ledger td,.dormant-panel th,.dormant-panel td{padding:11px 9px}
