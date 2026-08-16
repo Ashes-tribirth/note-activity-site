@@ -202,11 +202,17 @@ function renderCategories(items, dormantKeys) {
   });
 
   const order = ["音楽・曲", "エッセイ・日常", "note・ツール", "孫子・思考", "ゲーム・趣味", "その他"];
+  const totalCount = items.filter(article => article.category).length;
   const rows = order
     .map(name => categories.get(name) || { name, count: 0, active: 0, pv: 0, likes: 0, d7: 0 });
   $("#categories").innerHTML = rows.map(row =>
-    `<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり ${row.active}</span></p><small>${fmt.format(row.pv)} PV ・ スキ率 ${(row.likes / Math.max(row.pv, 1) * 100).toFixed(1)}% ・ 直近 ${signed(row.d7)} PV</small></div>`
+    `<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり ${row.active}</span></p>${categoryShareBar(row.count, totalCount, row.name)}<small>構成比 ${(row.count / Math.max(totalCount, 1) * 100).toFixed(1)}% ・ ${fmt.format(row.pv)} PV ・ スキ率 ${(row.likes / Math.max(row.pv, 1) * 100).toFixed(1)}% ・ 直近 ${signed(row.d7)} PV</small></div>`
   ).join("");
+}
+
+function categoryShareBar(count, total, name) {
+  const share = count / Math.max(total, 1) * 100;
+  return `<svg class="category-share" viewBox="0 0 100 5" preserveAspectRatio="none" role="img" aria-label="${esc(name)}は全${total}記事中${count}記事、構成比${share.toFixed(1)}%"><rect class="category-track" x="0" y="0" width="100" height="5"></rect><rect class="category-fill" x="0" y="0" width="${share}" height="5"><title>${esc(name)} ${count}記事／全${total}記事（${share.toFixed(1)}%）</title></rect></svg>`;
 }
 
 function renderHealth(data, latest) {
