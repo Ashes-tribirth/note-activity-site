@@ -1,4 +1,4 @@
-const API = "https://sora-note-log.ashestribirth.chatgpt.site/api/data";
+const API = "https://sora-note-log.ashestribirth.chatgpt.site/api/data?v=20260817a";
 const fmt = new Intl.NumberFormat("ja-JP");
 const $ = selector => document.querySelector(selector);
 const esc = value => {
