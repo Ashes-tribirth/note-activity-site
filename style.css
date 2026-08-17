@@ -31,3 +31,4 @@ html{font-size:16px}body{font-family:"Meiryo UI","Yu Gothic UI","Noto Sans JP",-
 .axis-y,.axis-x{font-size:10px}
 input,select,button{font:inherit}
 body.dark input,body.dark select{color-scheme:dark}
+.feature-comparisons{display:grid;gap:14px;margin-top:18px}.feature-pair{border:1px solid var(--line);border-radius:16px;padding:15px}.feature-pair>h3{margin:0 0 12px;font-size:14px;color:var(--muted)}.feature-pair>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.feature-pair article{background:#3988e808;border-radius:12px;padding:14px}.feature-pair h4{margin:0 0 4px;font-size:14px}.feature-pair article>b{font-size:12px;color:var(--muted)}.feature-pair dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 0}.feature-pair dt{font-size:11px;color:var(--muted)}.feature-pair dd{margin:2px 0 0;font-weight:700}@media(max-width:700px){.feature-pair>div{grid-template-columns:1fr}}
