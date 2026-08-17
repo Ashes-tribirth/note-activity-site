@@ -128,7 +128,47 @@ function categoryMetrics(row, totalCount, activityReady = true) {
   const commentRate = Number(row.comments || 0) / Math.max(pv, 1) * 100;
   const pvPerArticle = Number(row.d7 || 0) / Math.max(count, 1);
   const activity = activityReady ? pvPerArticle.toFixed(1) : "記録中";
-  return `<dl class="category-metrics"><div><dt>構成比</dt><dd>${share.toFixed(1)}%</dd></div><div><dt>スキ率</dt><dd>${likeRate.toFixed(1)}%</dd></div><div><dt>コメント率</dt><dd>${commentRate.toFixed(1)}%</dd></div><div><dt>記録PV／記事</dt><dd>${activity}</dd></div></dl>`;
+  return `<dl class="category-metrics"><div><dt>構成比</dt><dd>${share.toFixed(1)}%</dd></div><div><dt>スキ率</dt><dd>${likeRate.toFixed(1)}%</dd></div><div><dt>総コメント率</dt><dd>${commentRate.toFixed(1)}%</dd></div><div><dt>記録PV／記事</dt><dd>${activity}</dd></div></dl>`;
+}
+
+function featureAggregate(items) {
+  return items.reduce((sum, article) => {
+    sum.count += 1;
+    sum.pv += Number(article.pv || 0);
+    sum.likes += Number(article.likes || 0);
+    sum.comments += Number(article.comments || 0);
+    if (article.d7?.pv != null) sum.periodPv += Number(article.d7.pv || 0);
+    return sum;
+  }, { count: 0, pv: 0, likes: 0, comments: 0, periodPv: 0 });
+}
+
+function featureMetricCard(label, items, periodReady) {
+  const row = featureAggregate(items);
+  const likeRate = row.likes / Math.max(row.pv, 1) * 100;
+  const commentRate = row.comments / Math.max(row.pv, 1) * 100;
+  const periodPv = periodReady ? (row.periodPv / Math.max(row.count, 1)).toFixed(1) : "記録中";
+  return `<article><h4>${esc(label)}</h4><b>${row.count}記事</b><dl><div><dt>スキ率</dt><dd>${likeRate.toFixed(1)}%</dd></div><div><dt>総コメント率</dt><dd>${commentRate.toFixed(1)}%</dd></div><div><dt>記録PV／記事</dt><dd>${periodPv}</dd></div></dl></article>`;
+}
+
+function renderFeatureComparisons(items) {
+  const measured = items.filter(article => article.features && Number.isFinite(Number(article.features.bodyLength)));
+  if (!measured.length) {
+    $("#featureComparisons").innerHTML = empty("記事特徴を準備中", "次回のデータ連携後に表示します。");
+    return;
+  }
+  const lengths = measured.map(article => Number(article.features.bodyLength)).sort((a, b) => a - b);
+  const median = lengths[Math.floor(lengths.length / 2)];
+  const periodReady = !["gap", "waiting"].includes(periodState.mode);
+  const groups = [
+    { name: "動画", yes: "動画あり", no: "動画なし", test: article => article.features.hasVideo === true },
+    { name: "問いかけ", yes: "問いかけあり", no: "問いかけなし", test: article => article.features.hasReaderQuestion === true },
+    { name: "本文量", yes: `本文 ${fmt.format(median)}字以上`, no: `本文 ${fmt.format(median)}字未満`, test: article => Number(article.features.bodyLength) >= median },
+  ];
+  $("#featureComparisons").innerHTML = groups.map(group => {
+    const yes = measured.filter(group.test);
+    const no = measured.filter(article => !group.test(article));
+    return `<section class="feature-pair"><h3>${esc(group.name)}</h3><div>${featureMetricCard(group.yes, yes, periodReady)}${featureMetricCard(group.no, no, periodReady)}</div></section>`;
+  }).join("");
 }
 
 function renderAgeMix(items, latest) {
@@ -234,6 +274,7 @@ function render(data) {
 
   renderFairComparison(items, latest);
   renderCategories(items, dormantKeys);
+  renderFeatureComparisons(items);
   renderPhaseOne(data, activeItems, dormant, latest, dates, items);
 
   window.notePulseData = data;
