@@ -11,11 +11,13 @@
 <link rel="stylesheet" href="./activity.css?v=20260816a">
 <link rel="stylesheet" href="./typography.css">
 <link rel="stylesheet" href="./observatory.css">
+<link rel="stylesheet" href="./connection-insights.css?v=20260819a">
 <link rel="stylesheet" href="./sky-compass-motif.css">
 <script src="./period-integrity.js?v=20260816e" defer></script>
 <script src="./health-integrity.js?v=20260816e" defer></script>
 <script src="./app.js?v=20260817b" defer></script>
 <script src="./charts.js?v=20260816e" defer></script>
+<script src="./connection-insights.js?v=20260819a" defer></script>
 </head>
 <body>
 <main>
@@ -24,7 +26,17 @@
 <section class="panel health-panel"><div class="title"><div><span>DATA RELIABILITY</span><h2>データの健全性</h2></div><strong id="healthBadge" class="health-badge">確認中</strong></div><div id="healthChecks" class="health-checks"></div></section>
 <section id="changes" class="changes"></section>
 <section id="stats" class="stats"></section>
-<section class="follow follow-with-chart"><div><span>CONNECTION TREND</span><h2>つながりの推移</h2><small>毎朝自動記録</small></div><div><span>FOLLOWING</span><strong id="following">—</strong><small>フォロー中</small></div><div class="featured"><span>FOLLOWERS</span><strong id="followers">—</strong><small>フォロワー</small></div><div><span>前回取得から</span><strong id="followDiff">記録中</strong><small>フォロワー</small></div><div class="chart-toolbar" data-chart="follow"><span>表示範囲</span><div class="range-switch" role="group" aria-label="つながりの推移の表示範囲"><button type="button" data-range="30" class="active" aria-pressed="true">30日</button><button type="button" data-range="90" aria-pressed="false">90日</button><button type="button" data-range="all" aria-pressed="false">全期間</button></div></div><div id="followChart" class="history-chart follow-history-chart" aria-label="フォロー数とフォロワー数の推移"></div></section>
+<section class="follow connection-insights">
+  <div class="connection-head"><div><span>CONNECTION TREND</span><h2>つながりの推移</h2><small>増減を主役にして、累計値は補助情報として表示</small></div><small>毎朝自動記録</small></div>
+  <div class="connection-summary">
+    <div class="followers-card"><span>FOLLOWERS</span><strong id="followers">—</strong><small>フォロワー</small><div class="metric-diff">前回取得から <b id="followDiff">記録中</b></div></div>
+    <div class="following-card"><span>FOLLOWING</span><strong id="following">—</strong><small>フォロー中</small><div class="metric-diff">前回取得から <b id="followingDiff">記録中</b></div></div>
+    <div><span>分析の見方</span><strong>増減 → 期間 → 累計</strong><small>「いつ動いたか」を上から確認</small></div>
+  </div>
+  <div class="connection-visual"><div class="connection-visual-head"><div><h3>フォロワー増減</h3><small>前回取得から何人増減したか</small></div><small>実測値</small></div><div id="followerDeltaChart" aria-label="前回取得からのフォロワー増減"></div></div>
+  <div class="connection-visual"><div class="connection-visual-head"><div><h3>期間比較</h3><small>必要な履歴が揃った期間だけ数値化</small></div></div><div id="followerPeriodCompare" class="connection-periods"></div></div>
+  <div class="connection-visual"><div class="connection-visual-head"><div><h3>フォロワー累計推移</h3><small>現在値の流れを確認する補助グラフ</small></div></div><div id="followerTotalChart" aria-label="フォロワー累計推移"></div><p class="connection-note">累計グラフはフォロワーのみを表示します。フォロー中との比較は行いません。</p></div>
+</section>
 <section class="panel trend"><div class="title"><div><span>ACTIVITY HISTORY</span><h2>活動の推移</h2></div><small id="days">記録 —日目</small></div><div class="chart-toolbar" data-chart="activity"><span>表示範囲</span><div class="range-switch" role="group" aria-label="活動の推移の表示範囲"><button type="button" data-range="30" class="active" aria-pressed="true">30日</button><button type="button" data-range="90" aria-pressed="false">90日</button><button type="button" data-range="all" aria-pressed="false">全期間</button></div></div><div id="trendBars" class="activity-history" aria-label="24時間換算したPV・スキ・コメント増加量"></div><p id="trendNote">データを読み込んでいます</p></section>
 <section class="grid analysis-grid">
 <article class="panel"><div class="title"><div><span>PERIOD COMPARISON</span><h2>同じ長さの期間で比較</h2></div><small>直近 vs その前</small></div><div id="periodCompare" class="period-compare"></div></article>
