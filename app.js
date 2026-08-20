@@ -270,6 +270,42 @@ function renderPhaseOne(data, activeItems, dormant, latest, historyDates, allIte
   renderLedger(allItems, dormant, historyDates);
 }
 
+function renderCampaigns(data) {
+  const campaignData = data.campaignData;
+  if (!campaignData) {
+    $("#openCampaignList").innerHTML = empty("企画データを準備中", "次回の自動更新後に表示します。");
+    $("#confirmedCampaignMatches").innerHTML = empty("照合データを準備中", "公式企画との照合結果を待っています。");
+    $("#candidateCampaignMatches").innerHTML = empty("候補データを準備中", "確認候補がある場合に表示します。");
+    return;
+  }
+  const campaigns = campaignData.campaigns || [];
+  const matches = campaignData.matches || [];
+  const candidates = campaignData.candidates || [];
+  const campaignById = new Map(campaigns.map(item => [item.id, item]));
+  const open = campaigns.filter(item => item.status === "open").sort((a, b) => String(a.endAt).localeCompare(String(b.endAt)));
+  const dateLabel = value => value ? value.replaceAll("-", ".") : "期限未確認";
+  const remaining = value => {
+    if (!value) return "期限未確認";
+    const count = Math.ceil((Date.parse(`${value}T23:59:59+09:00`) - Date.now()) / 86400000);
+    return count >= 0 ? `あと${count}日` : "終了";
+  };
+  const campaignCard = item => `<a class="campaign-card" href="${esc(item.launchUrl)}" target="_blank" rel="noopener noreferrer"><span>${esc(item.type === "prompt" ? "お題" : "コンテスト")}</span><strong>${esc(item.hashtag || item.title)}</strong><small>${esc(item.title)}</small><b>${dateLabel(item.endAt)} <em>${remaining(item.endAt)}</em></b></a>`;
+  const matchRow = (item, candidate = false) => {
+    const campaign = campaignById.get(item.campaignId) || {};
+    return `<article class="campaign-match ${candidate ? "candidate" : "confirmed"}"><span>${candidate ? "要確認" : "確認済み"}</span><a href="${esc(item.articleUrl)}" target="_blank" rel="noopener noreferrer">${esc(item.articleTitle)}</a><small>${esc(item.campaignHashtag || campaign.hashtag || campaign.title || "公式企画")}</small></article>`;
+  };
+  $("#openCampaignCount").textContent = fmt.format(open.length);
+  $("#confirmedMatchCount").textContent = fmt.format(new Set(matches.map(item => item.articleKey)).size);
+  $("#candidateMatchCount").textContent = fmt.format(candidates.length);
+  $("#campaignCheckedAt").textContent = `最終照合 ${new Date(campaignData.checkedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+  $("#openCampaignList").innerHTML = open.length ? open.map(campaignCard).join("") : empty("募集中の企画はありません", "次回の自動更新で再確認します。");
+  $("#confirmedCampaignMatches").innerHTML = matches.length ? matches.map(item => matchRow(item)).join("") : empty("参加確認はありません", "募集期間まで確認できた記事のみ表示します。");
+  $("#candidateCampaignMatches").innerHTML = candidates.length ? candidates.map(item => matchRow(item, true)).join("") : empty("要確認候補はありません", "あいまいな一致は確定扱いにしません。");
+  $("#campaignCoverage").textContent = campaignData.unavailableArticleCount
+    ? `公開中の記事のうち${fmt.format(campaignData.unavailableArticleCount)}件はnote側で取得できず、毎日再確認しています。`
+    : "公開中の記事をすべて照合できています。";
+}
+
 function render(data) {
   const summaries = data.summaries || [];
   const latest = summaries.at(-1);
@@ -294,6 +330,7 @@ function render(data) {
   renderFairComparison(items, latest);
   renderCategories(items, dormantKeys);
   renderFeatureComparisons(items);
+  renderCampaigns(data);
   renderPhaseOne(data, activeItems, dormant, latest, dates, items);
 
   window.notePulseData = data;

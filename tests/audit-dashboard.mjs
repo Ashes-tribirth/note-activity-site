@@ -39,5 +39,11 @@ assert(source["period-integrity.js"].includes("order.includes(article.category)"
 assert(source["health-integrity.js"].includes("pendingCategories"), "分類確認待ちが健全性チェックにありません");
 assert(source["app.js"].includes('class="curve-axis-label"'), "記事推移グラフに軸ラベルがありません");
 assert(source["app.js"].includes('rows[index].date.slice(5).replace("-", "/")'), "記事推移グラフに日付目盛りがありません");
+assert(source["index.html"].includes('id="openCampaignList"'), "募集中の公式企画一覧がありません");
+assert(source["index.html"].includes('id="confirmedCampaignMatches"'), "確定した参加記事欄がありません");
+assert(source["index.html"].includes('id="candidateCampaignMatches"'), "要確認候補欄がありません");
+assert(source["app.js"].includes('item.status === "open"'), "募集中の企画だけを抽出していません");
+assert(source["app.js"].includes('candidate ? "要確認" : "確認済み"'), "確定と候補の表示が区別されていません");
+assert(source["app.js"].includes("unavailableArticleCount"), "未取得記事の件数が表示されません");
 
 console.log(`dashboard audit passed: ${ids.length} unique ids, no CSP-inline conflicts`);
