@@ -45,5 +45,8 @@ assert(source["index.html"].includes('id="candidateCampaignMatches"'), "要確�
 assert(source["app.js"].includes('item.status === "open"'), "募集中の企画だけを抽出していません");
 assert(source["app.js"].includes('candidate ? "要確認" : "確認済み"'), "確定と候補の表示が区別されていません");
 assert(source["app.js"].includes("unavailableArticleCount"), "未取得記事の件数が表示されません");
+assert(source["app.js"].includes('class="campaign-match-metrics"'), "参加記事の観測数値がありません");
+assert(source["app.js"].includes('article.d7?.pv == null ? "記録中" : signed(article.d7.pv)'), "参加記事の直近7日PVが記録不足を区別していません");
+assert(source["index.html"].includes("企画参加によって増えたと断定するものではありません"), "参加と伸びを因果関係として誤読させる注意書きがありません");
 
 console.log(`dashboard audit passed: ${ids.length} unique ids, no CSP-inline conflicts`);

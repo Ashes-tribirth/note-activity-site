@@ -270,7 +270,7 @@ function renderPhaseOne(data, activeItems, dormant, latest, historyDates, allIte
   renderLedger(allItems, dormant, historyDates);
 }
 
-function renderCampaigns(data) {
+function renderCampaigns(data, articleItems) {
   const campaignData = data.campaignData;
   if (!campaignData) {
     $("#openCampaignList").innerHTML = empty("企画データを準備中", "次回の自動更新後に表示します。");
@@ -282,6 +282,7 @@ function renderCampaigns(data) {
   const matches = campaignData.matches || [];
   const candidates = campaignData.candidates || [];
   const campaignById = new Map(campaigns.map(item => [item.id, item]));
+  const articleByKey = new Map(articleItems.map(item => [item.key, item]));
   const open = campaigns.filter(item => item.status === "open").sort((a, b) => String(a.endAt).localeCompare(String(b.endAt)));
   const dateLabel = value => value ? value.replaceAll("-", ".") : "期限未確認";
   const remaining = value => {
@@ -292,7 +293,12 @@ function renderCampaigns(data) {
   const campaignCard = item => `<a class="campaign-card" href="${esc(item.launchUrl)}" target="_blank" rel="noopener noreferrer"><span>${esc(item.type === "prompt" ? "お題" : "コンテスト")}</span><strong>${esc(item.hashtag || item.title)}</strong><small>${esc(item.title)}</small><b>${dateLabel(item.endAt)} <em>${remaining(item.endAt)}</em></b></a>`;
   const matchRow = (item, candidate = false) => {
     const campaign = campaignById.get(item.campaignId) || {};
-    return `<article class="campaign-match ${candidate ? "candidate" : "confirmed"}"><span>${candidate ? "要確認" : "確認済み"}</span><a href="${esc(item.articleUrl)}" target="_blank" rel="noopener noreferrer">${esc(item.articleTitle)}</a><small>${esc(item.campaignHashtag || campaign.hashtag || campaign.title || "公式企画")}</small></article>`;
+    const article = articleByKey.get(item.articleKey);
+    const rate = article ? (Number(article.likes || 0) + Number(article.comments || 0)) / Math.max(Number(article.pv || 0), 1) * 100 : null;
+    const metrics = !candidate && article
+      ? `<dl class="campaign-match-metrics"><div><dt>現在PV</dt><dd>${fmt.format(article.pv)}</dd></div><div><dt>直近7日PV</dt><dd>${article.d7?.pv == null ? "記録中" : signed(article.d7.pv)}</dd></div><div><dt>反応率</dt><dd>${rate.toFixed(1)}%</dd></div></dl>`
+      : "";
+    return `<article class="campaign-match ${candidate ? "candidate" : "confirmed"}"><span>${candidate ? "要確認" : "確認済み"}</span><a href="${esc(item.articleUrl)}" target="_blank" rel="noopener noreferrer">${esc(item.articleTitle)}</a><small>${esc(item.campaignHashtag || campaign.hashtag || campaign.title || "公式企画")}</small>${metrics}</article>`;
   };
   $("#openCampaignCount").textContent = fmt.format(open.length);
   $("#confirmedMatchCount").textContent = fmt.format(new Set(matches.map(item => item.articleKey)).size);
@@ -330,7 +336,7 @@ function render(data) {
   renderFairComparison(items, latest);
   renderCategories(items, dormantKeys);
   renderFeatureComparisons(items);
-  renderCampaigns(data);
+  renderCampaigns(data, items);
   renderPhaseOne(data, activeItems, dormant, latest, dates, items);
 
   window.notePulseData = data;
