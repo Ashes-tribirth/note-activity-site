@@ -31,5 +31,12 @@ assert.equal((source["app.js"].match(/function renderHealth/g) || []).length, 0,
 assert(source["connection-insights.js"].includes("continuousDelta(rows, 7)"), "フォロワーの7日差がありません");
 assert(source["connection-insights.js"].includes("continuousDelta(rows, 30)"), "フォロワーの30日差がありません");
 assert(!source["index.html"].includes("分析の見方"), "数値でない説明カードがつながりの概要に混在しています");
+assert(source["app.js"].includes('nc0ba447096ad: "孫子・思考"'), "『将来は、何になりたい？』の確認済み分類がありません");
+assert(source["app.js"].includes('n715119ad26e9: "ゲーム・趣味"'), "スローライフ記事の確認済み分類がありません");
+assert(source["app.js"].includes('return article.category || "要確認"'), "未確認分類が分析表から隠れます");
+assert(source["period-integrity.js"].includes("order.includes(article.category)"), "要確認記事が正式分類の集計へ混入します");
+assert(source["health-integrity.js"].includes("pendingCategories"), "分類確認待ちが健全性チェックにありません");
+assert(source["app.js"].includes('class="curve-axis-label"'), "記事推移グラフに軸ラベルがありません");
+assert(source["app.js"].includes('rows[index].date.slice(5).replace("-", "/")'), "記事推移グラフに日付目盛りがありません");
 
 console.log(`dashboard audit passed: ${ids.length} unique ids, no CSP-inline conflicts`);

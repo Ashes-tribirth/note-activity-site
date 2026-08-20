@@ -31,12 +31,14 @@ function initTheme() {
 
 const REVIEWED_CATEGORY_OVERRIDES = {
   n3445e9974c2c: "エッセイ・日常",
+  nc0ba447096ad: "孫子・思考",
+  n715119ad26e9: "ゲーム・趣味",
 };
 
 function categoryOf(article) {
   const key = article.key || String(article.url || "").split("/").pop();
   if (REVIEWED_CATEGORY_OVERRIDES[key]) return REVIEWED_CATEGORY_OVERRIDES[key];
-  return article.category && article.category !== "要確認" ? article.category : "";
+  return article.category || "要確認";
 }
 
 function empty(title, text) {
@@ -228,9 +230,25 @@ function renderGrowthCurve(data, items, latest) {
     const min = Math.min(...rows.map(row => row.pv));
     const max = Math.max(...rows.map(row => row.pv));
     const range = Math.max(1, max - min);
-    const points = rows.map((row, index) => `${index / Math.max(1, rows.length - 1) * 100},${92 - (row.pv - min) / range * 80}`).join(" ");
+    const width = 640;
+    const height = 230;
+    const pad = { left: 56, right: 18, top: 18, bottom: 36 };
+    const plotWidth = width - pad.left - pad.right;
+    const plotHeight = height - pad.top - pad.bottom;
+    const xAt = index => pad.left + index / Math.max(1, rows.length - 1) * plotWidth;
+    const yAt = pv => pad.top + (max - pv) / range * plotHeight;
+    const points = rows.map((row, index) => `${xAt(index)},${yAt(row.pv)}`).join(" ");
+    const yTicks = [max, Math.round((max + min) / 2), min];
+    const yAxis = yTicks.map(value => {
+      const y = yAt(value);
+      return `<line class="curve-grid" x1="${pad.left}" y1="${y}" x2="${width - pad.right}" y2="${y}"></line><text class="curve-axis-label" x="${pad.left - 9}" y="${y + 4}" text-anchor="end">${fmt.format(value)}</text>`;
+    }).join("");
+    const dateStep = Math.max(1, Math.ceil(rows.length / 5));
+    const dateIndexes = rows.map((_, index) => index).filter(index => index === 0 || index === rows.length - 1 || index % dateStep === 0);
+    const xAxis = [...new Set(dateIndexes)].map(index => `<text class="curve-axis-label" x="${xAt(index)}" y="${height - 10}" text-anchor="middle">${esc(rows[index].date.slice(5).replace("-", "/"))}</text>`).join("");
+    const dots = rows.map((row, index) => `<circle class="curve-dot" cx="${xAt(index)}" cy="${yAt(row.pv)}" r="3"><title>${esc(row.date)}: ${fmt.format(row.pv)} PV</title></circle>`).join("");
     $("#curveChart").innerHTML = rows.length > 1
-      ? `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="${points}"/></svg>`
+      ? `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="選択した記事の累計PV推移">${yAxis}<polyline points="${points}"/>${dots}${xAxis}</svg>`
       : empty("推移は記録中", "記事別履歴が2日分になると線で表示します。");
     $("#curveNote").textContent = rows.length
       ? `${rows[0].date} → ${rows.at(-1).date} ／ ${fmt.format(rows[0].pv)} → ${fmt.format(rows.at(-1).pv)} PV`

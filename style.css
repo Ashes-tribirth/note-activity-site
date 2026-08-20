@@ -11,6 +11,11 @@
 
 .dormant-panel{margin-bottom:18px}.dormant-panel>.title>strong{color:var(--muted);font-size:18px}.dormant-panel details{margin-top:14px}.dormant-panel summary{cursor:pointer;color:var(--blue);font-size:11px}.dormant-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0}.dormant-summary>div{padding:12px;border:1px solid var(--line);border-radius:10px}.dormant-summary span,.dormant-summary b{display:block}.dormant-summary span{color:var(--muted);font-size:9px}.dormant-summary b{font-size:17px}
 @media(max-width:520px){.dormant-summary{grid-template-columns:1fr}}
+.curve-chart{border:0}
+.curve-chart svg{display:block}
+.curve-grid{stroke:currentColor;opacity:.13;stroke-width:1}
+.curve-axis-label{fill:currentColor;opacity:.7;font-size:10px;font-variant-numeric:tabular-nums}
+.curve-dot{fill:var(--blue);stroke:var(--card);stroke-width:2}
 
 .state{display:inline-block;padding:3px 7px;border-radius:999px;font-size:8px}.state.active{color:var(--green);background:#45a98218}.state.dormant{color:var(--muted);background:#71809818}.article-ledger .table-wrap{max-height:560px}.article-ledger tbody tr{min-height:36px}
 

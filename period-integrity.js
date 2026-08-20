@@ -225,8 +225,9 @@ function renderLedger(allItems, dormant) {
 
 function renderCategories(items, dormantKeys) {
   const canJudge = !["gap", "waiting"].includes(periodState.mode);
+  const order = ["音楽・曲", "エッセイ・日常", "note・ツール", "孫子・思考", "ゲーム・趣味", "その他"];
   const categories = new Map();
-  items.filter(article => article.category).forEach(article => {
+  items.filter(article => order.includes(article.category)).forEach(article => {
     const active = !dormantKeys.has(article.key);
     const entry = categories.get(article.category) || { name: article.category, count: 0, active: 0, pv: 0, likes: 0, comments: 0, d7: 0 };
     entry.count += 1;
@@ -239,8 +240,7 @@ function renderCategories(items, dormantKeys) {
     }
     categories.set(article.category, entry);
   });
-  const order = ["音楽・曲", "エッセイ・日常", "note・ツール", "孫子・思考", "ゲーム・趣味", "その他"];
-  const total = items.filter(article => article.category).length;
+  const total = items.filter(article => order.includes(article.category)).length;
   const rows = order.map(name => categories.get(name) || { name, count: 0, active: 0, pv: 0, likes: 0, comments: 0, d7: 0 });
   $("#categories").innerHTML = rows.map(row =>
     `<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり ${canJudge ? row.active : "判定中"}</span></p>${categoryShareBar(row.count, total, row.name)}${categoryMetrics(row, total, canJudge)}</div>`

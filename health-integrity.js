@@ -69,6 +69,7 @@ function renderHealth(data, latest) {
   const latestDate = rowDate(latest);
   const historyCount = (data.articleHistory || []).filter(row => rowDate(row) === latestDate).length;
   const articles = data.articles || [];
+  const pendingCategories = articles.filter(article => !article.category || article.category === "要確認");
   const countMismatch = historyCount !== articles.length || Number(latest.articleCount) !== articles.length;
   const totalMismatch = [["pv", "totalPv"], ["likes", "totalLikes"], ["comments", "totalComments"]]
     .some(([field, total]) => articles.reduce((sum, row) => sum + Number(row[field] || 0), 0) !== Number(latest[total]));
@@ -83,6 +84,7 @@ function renderHealth(data, latest) {
     ["集計値", totalMismatch ? "注意" : "正常", totalMismatch ? "記事合計と最新集計が一致しません" : "記事合計と最新集計が一致"],
     ["日付重複", duplicateDates ? "注意" : "正常", duplicateDates ? "同じ日付の記録が重複" : "日付の重複なし"],
     ["日付欠測", missing.length ? "注意" : "正常", missingText],
+    ["記事分類", pendingCategories.length ? "注意" : "正常", pendingCategories.length ? `確認待ち ${pendingCategories.length}記事：${pendingCategories.slice(0, 2).map(article => article.title).join("、")}${pendingCategories.length > 2 ? " ほか" : ""}` : "公開中の記事はすべて分類済み"],
   ];
   const warnings = checks.filter(row => row[1] === "注意").length;
   $("#healthBadge").textContent = warnings ? `${warnings}件 注意` : "異常なし";
