@@ -69,7 +69,7 @@ function renderHealth(data, latest) {
   const latestDate = rowDate(latest);
   const historyCount = (data.articleHistory || []).filter(row => rowDate(row) === latestDate).length;
   const articles = data.articles || [];
-  const pendingCategories = articles.filter(article => !article.category || article.category === "要確認");
+  const pendingCategories = articles.filter(article => categoryOf(article) === "要確認");
   const countMismatch = historyCount !== articles.length || Number(latest.articleCount) !== articles.length;
   const totalMismatch = [["pv", "totalPv"], ["likes", "totalLikes"], ["comments", "totalComments"]]
     .some(([field, total]) => articles.reduce((sum, row) => sum + Number(row[field] || 0), 0) !== Number(latest[total]));
