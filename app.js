@@ -33,6 +33,7 @@ const REVIEWED_CATEGORY_OVERRIDES = {
   n3445e9974c2c: "エッセイ・日常",
   nc0ba447096ad: "孫子・思考",
   n715119ad26e9: "ゲーム・趣味",
+  nd997cebc4486: "エッセイ・日常",
 };
 
 function categoryOf(article) {
