@@ -33,6 +33,7 @@ assert(source["connection-insights.js"].includes("continuousDelta(rows, 30)"), "
 assert(!source["index.html"].includes("分析の見方"), "数値でない説明カードがつながりの概要に混在しています");
 assert(source["app.js"].includes('nc0ba447096ad: "孫子・思考"'), "『将来は、何になりたい？』の確認済み分類がありません");
 assert(source["app.js"].includes('n715119ad26e9: "ゲーム・趣味"'), "スローライフ記事の確認済み分類がありません");
+assert(source["app.js"].includes('nd997cebc4486: "エッセイ・日常"'), "『note書いてるの私じゃん』の確認済み分類がありません");
 assert(source["app.js"].includes('return article.category || "要確認"'), "未確認分類が分析表から隠れます");
 assert(source["period-integrity.js"].includes("order.includes(article.category)"), "要確認記事が正式分類の集計へ混入します");
 assert(source["health-integrity.js"].includes("pendingCategories"), "分類確認待ちが健全性チェックにありません");
