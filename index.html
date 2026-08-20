@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>note Pulse</title>
 <meta name="description" content="note活動の実態と進捗を、保存した数値から正確に確認するダッシュボード">
-<link rel="stylesheet" href="./style.css?v=20260820a">
+<link rel="stylesheet" href="./style.css?v=20260821b">
 <link rel="stylesheet" href="./activity.css?v=20260816a">
 <link rel="stylesheet" href="./typography.css">
 <link rel="stylesheet" href="./observatory.css">
@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="./sky-compass-motif.css">
 <script src="./period-integrity.js?v=20260820a" defer></script>
 <script src="./health-integrity.js?v=20260820a" defer></script>
-<script src="./app.js?v=20260821a" defer></script>
+<script src="./app.js?v=20260821b" defer></script>
 <script src="./charts.js?v=20260816e" defer></script>
 <script src="./connection-insights.js?v=20260819a" defer></script>
 </head>
@@ -26,6 +26,20 @@
 <section class="panel health-panel"><div class="title"><div><span>DATA RELIABILITY</span><h2>データの健全性</h2></div><strong id="healthBadge" class="health-badge">確認中</strong></div><div id="healthChecks" class="health-checks"></div></section>
 <section id="changes" class="changes"></section>
 <section id="stats" class="stats"></section>
+<section class="panel campaign-panel">
+  <div class="title"><div><span>OFFICIAL CAMPAIGNS</span><h2>公式企画との照合</h2></div><small id="campaignCheckedAt">確認中</small></div>
+  <div class="campaign-summary" aria-label="公式企画の照合状況">
+    <div><span>募集中</span><strong id="openCampaignCount">—</strong><small>公式企画</small></div>
+    <div><span>参加確認</span><strong id="confirmedMatchCount">—</strong><small>記事</small></div>
+    <div><span>要確認</span><strong id="candidateMatchCount">—</strong><small>候補</small></div>
+  </div>
+  <div class="campaign-block"><div class="campaign-heading"><div><h3>現在募集中の企画</h3><small>締切が近い順</small></div></div><div id="openCampaignList" class="campaign-list"></div></div>
+  <div class="campaign-columns">
+    <div class="campaign-block"><div class="campaign-heading"><div><h3>参加を確認できた記事</h3><small>ハッシュタグと募集期間が一致</small></div></div><div id="confirmedCampaignMatches" class="campaign-match-list"></div></div>
+    <div class="campaign-block"><div class="campaign-heading"><div><h3>要確認の候補</h3><small>ハッシュタグは一致、募集期間は未確認</small></div></div><div id="candidateCampaignMatches" class="campaign-match-list"></div></div>
+  </div>
+  <p id="campaignCoverage" class="method">企画データを読み込んでいます。</p>
+</section>
 <section class="follow connection-insights">
   <div class="connection-head"><div><span>CONNECTION TREND</span><h2>つながりの推移</h2><small>増減を主役にして、累計値は補助情報として表示</small></div><small>毎朝自動記録</small></div>
   <div class="connection-summary">
