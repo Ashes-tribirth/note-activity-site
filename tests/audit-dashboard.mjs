@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const files = ["index.html", "app.js", "period-integrity.js", "health-integrity.js", "charts.js"];
+const files = ["index.html", "app.js", "period-integrity.js", "health-integrity.js", "charts.js", "connection-insights.js"];
 const source = Object.fromEntries(files.map(file => [file, readFileSync(new URL(`../${file}`, import.meta.url), "utf8")]));
 
 for (const [file, text] of Object.entries(source)) {
@@ -28,5 +28,8 @@ assert(!source["index.html"].includes("charts.css"), "空のcharts.css参照が�
 assert(!source["period-integrity.js"].includes("window.render"), "描画関数の後付け上書きが残っています");
 assert(!source["health-integrity.js"].includes("window.render"), "健全性描画の後付け上書きが残っています");
 assert.equal((source["app.js"].match(/function renderHealth/g) || []).length, 0, "app.jsに旧健全性実装が残っています");
+assert(source["connection-insights.js"].includes("continuousDelta(rows, 7)"), "フォロワーの7日差がありません");
+assert(source["connection-insights.js"].includes("continuousDelta(rows, 30)"), "フォロワーの30日差がありません");
+assert(!source["index.html"].includes("分析の見方"), "数値でない説明カードがつながりの概要に混在しています");
 
 console.log(`dashboard audit passed: ${ids.length} unique ids, no CSP-inline conflicts`);

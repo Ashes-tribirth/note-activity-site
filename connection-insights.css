@@ -3,7 +3,7 @@
 .connection-insights .connection-head span{color:var(--muted);font-size:11px;letter-spacing:.15em}
 .connection-insights .connection-head h2{margin:2px 0;font-size:24px}
 .connection-insights .connection-head small{color:var(--muted)}
-.connection-summary{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;margin-bottom:18px}
+.connection-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
 .connection-summary>div{min-width:0;padding:18px 20px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--card) 88%,transparent)}
 .connection-summary span{display:block;color:var(--muted);font-size:11px;letter-spacing:.12em}
 .connection-summary strong{display:block;margin:6px 0 2px;font-size:34px;line-height:1.15;font-variant-numeric:tabular-nums}
@@ -31,5 +31,5 @@
 .connection-periods strong.ready{color:var(--violet)}
 .connection-periods small{color:var(--muted);font-size:10px}
 .connection-note{margin:10px 2px 0;color:var(--muted);font-size:10px}
-@media(max-width:800px){.connection-summary{grid-template-columns:1fr 1fr}.connection-summary .followers-card{grid-column:1/-1}.connection-periods{grid-template-columns:1fr}.connection-visual{padding:14px}}
+@media(max-width:800px){.connection-periods{grid-template-columns:1fr}.connection-visual{padding:14px}}
 @media(max-width:520px){.connection-insights{padding:18px 16px}.connection-insights .connection-head{flex-direction:column}.connection-summary{grid-template-columns:1fr}.connection-summary .followers-card{grid-column:auto}.connection-summary strong{font-size:30px}.connection-visual-head{align-items:flex-start;flex-direction:column}.connection-visual{padding:12px}.connection-periods{gap:8px}}
