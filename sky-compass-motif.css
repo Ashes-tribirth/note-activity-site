@@ -31,7 +31,82 @@ body::after{display:none}
 body.dark .brand .sky-light{display:none}
 body.dark .brand .sky-dark{display:block}
 
+/* Final layout guard: keep newly added Phase 2 cards inside the viewport. */
+main,
+main>*,
+.panel,
+.follow,
+.grid,
+.stats,
+.changes,
+.title,
+.title>div,
+.campaign-columns,
+.campaign-block,
+.campaign-list,
+.campaign-match-list,
+.trending-topic-list,
+.official-selection-summary,
+.official-selection-categories,
+.official-selection-themes,
+.official-selection-theme,
+.official-selection-own-articles{
+  min-width:0;
+  max-width:100%;
+}
+
+.campaign-card,
+.campaign-match,
+.trending-topic-card,
+.official-selection-summary>div,
+.official-selection-categories article,
+.official-selection-theme,
+.official-selection-own-articles a{
+  min-width:0;
+}
+
+.campaign-card strong,
+.campaign-card small,
+.campaign-match a,
+.campaign-match small,
+.trending-topic-card a,
+.trending-topic-card small,
+.official-selection-theme strong,
+.official-selection-theme small,
+.official-selection-theme dd,
+.official-selection-own-articles a span{
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+.official-selection-theme dl{
+  min-width:0;
+  flex-wrap:wrap;
+}
+
+.official-selection-theme dl>div{
+  min-width:0;
+  flex-wrap:wrap;
+}
+
+img,
+svg{
+  max-width:100%;
+}
+
+@media(max-width:800px){
+  .record-strip{flex-wrap:wrap}
+  .campaign-heading{align-items:flex-start;gap:8px}
+}
+
 @media(max-width:520px){
   .brand>b{width:38px;height:38px;flex-basis:38px}
   .brand>b img{width:36px;height:36px}
+  .record-strip{gap:8px 14px}
+  .official-selection-summary{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .official-selection-categories,
+  .official-selection-themes,
+  .campaign-list,
+  .trending-topic-list{grid-template-columns:minmax(0,1fr)}
+  .campaign-match-metrics{grid-template-columns:minmax(0,1fr)}
 }
