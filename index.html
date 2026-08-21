@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>note Pulse</title>
 <meta name="description" content="note活動の実態と進捗を、保存した数値から正確に確認するダッシュボード">
-<link rel="stylesheet" href="./style.css?v=20260821c">
+<link rel="stylesheet" href="./style.css?v=20260821d">
 <link rel="stylesheet" href="./activity.css?v=20260816a">
 <link rel="stylesheet" href="./typography.css">
 <link rel="stylesheet" href="./observatory.css">
@@ -16,7 +16,7 @@
 <script src="./period-integrity.js?v=20260820a" defer></script>
 <script src="./health-integrity.js?v=20260820a" defer></script>
 <script src="./campaign-comparison.js?v=20260821a" defer></script>
-<script src="./app.js?v=20260821c" defer></script>
+<script src="./app.js?v=20260821d" defer></script>
 <script src="./charts.js?v=20260816e" defer></script>
 <script src="./connection-insights.js?v=20260819a" defer></script>
 </head>
@@ -40,6 +40,17 @@
     <div class="campaign-block"><div class="campaign-heading"><div><h3>要確認の候補</h3><small>ハッシュタグは一致、募集期間は未確認</small></div></div><div id="candidateCampaignMatches" class="campaign-match-list"></div></div>
   </div>
   <p id="campaignCoverage" class="method">企画データを読み込んでいます。</p>
+</section>
+<section class="panel trending-panel">
+  <div class="title"><div><span>PUBLIC TRENDING TOPICS</span><h2>note公開画面の急上昇</h2></div><small id="trendingCheckedAt">確認中</small></div>
+  <div class="trending-summary" aria-label="急上昇ワードの観測状況">
+    <div><span>本日の観測</span><strong id="trendingTopicCount">—</strong><small>語句</small></div>
+    <div><span>公式企画一致</span><strong id="trendingCampaignMatchCount">—</strong><small>語句</small></div>
+    <div><span>自記事一致</span><strong id="trendingOwnMatchCount">—</strong><small>語句</small></div>
+  </div>
+  <div id="trendingTopicList" class="trending-topic-list"></div>
+  <p id="trendingCoverage" class="method">急上昇データを読み込んでいます。</p>
+  <p class="campaign-observation-note">noteの公開画面で「急上昇」として確認した語句です。集計方法や対象範囲は公開されていないため、note全体の投稿増加順位とは断定しません。</p>
 </section>
 <section class="follow connection-insights">
   <div class="connection-head"><div><span>CONNECTION TREND</span><h2>つながりの推移</h2><small>増減を主役にして、累計値は補助情報として表示</small></div><small>毎朝自動記録</small></div>
