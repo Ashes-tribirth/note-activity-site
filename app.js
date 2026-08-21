@@ -324,9 +324,11 @@ function renderCampaigns(data, articleItems) {
 
 function renderTrending(data) {
   const trending = data.campaignData?.trending;
+  const status = data.campaignData?.trendingStatus;
   if (!trending) {
-    $("#trendingTopicList").innerHTML = empty("急上昇データを準備中", "次回の正常な観測後に表示します。");
-    $("#trendingCoverage").textContent = "取得結果と照合結果の日付がそろった場合だけ表示します。";
+    const failed = status && !status.ok;
+    $("#trendingTopicList").innerHTML = empty(failed ? "急上昇の更新に失敗" : "急上昇データを準備中", failed ? "前回の正常データがまだないため、次回の自動更新で再試行します。" : "次回の正常な観測後に表示します。");
+    $("#trendingCoverage").textContent = failed ? "取得失敗を記録しました。企画・記事実績の更新には影響しません。" : "取得結果と照合結果の日付がそろった場合だけ表示します。";
     return;
   }
   const topics = trending.topics || [];
@@ -344,11 +346,16 @@ function renderTrending(data) {
   $("#trendingTopicCount").textContent = fmt.format(topics.length);
   $("#trendingCampaignMatchCount").textContent = fmt.format(campaignMatches);
   $("#trendingOwnMatchCount").textContent = fmt.format(ownMatches);
-  $("#trendingCheckedAt").textContent = `最終観測 ${new Date(trending.checkedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+  const displayTime = value => new Date(value).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  $("#trendingCheckedAt").textContent = status && !status.ok ? `更新失敗 ${displayTime(status.checkedAt)}` : `最終観測 ${displayTime(trending.checkedAt)}`;
   $("#trendingTopicList").innerHTML = topics.length ? topics.map(topicCard).join("") : empty("観測語句はありません", "次回の自動更新で再確認します。");
-  $("#trendingCoverage").textContent = trending.unavailableArticleCount
-    ? `公開中の記事のうち${fmt.format(trending.unavailableArticleCount)}件はハッシュタグを確認できていません。`
-    : `公開中の記事${fmt.format(trending.currentArticleCount || 0)}件を照合済みです。`;
+  if (status && !status.ok) {
+    $("#trendingCoverage").textContent = `今回の取得または照合に失敗したため、${displayTime(trending.checkedAt)}の正常データを保持しています。次回の自動更新で再試行します。`;
+  } else {
+    $("#trendingCoverage").textContent = trending.unavailableArticleCount
+      ? `公開中の記事のうち${fmt.format(trending.unavailableArticleCount)}件はハッシュタグを確認できていません。`
+      : `公開中の記事${fmt.format(trending.currentArticleCount || 0)}件を照合済みです。`;
+  }
 }
 
 function render(data) {
