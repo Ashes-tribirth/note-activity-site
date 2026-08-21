@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>note Pulse</title>
 <meta name="description" content="note活動の実態と進捗を、保存した数値から正確に確認するダッシュボード">
-<link rel="stylesheet" href="./style.css?v=20260821b">
+<link rel="stylesheet" href="./style.css?v=20260821c">
 <link rel="stylesheet" href="./activity.css?v=20260816a">
 <link rel="stylesheet" href="./typography.css">
 <link rel="stylesheet" href="./observatory.css">
@@ -15,7 +15,8 @@
 <link rel="stylesheet" href="./sky-compass-motif.css">
 <script src="./period-integrity.js?v=20260820a" defer></script>
 <script src="./health-integrity.js?v=20260820a" defer></script>
-<script src="./app.js?v=20260821b" defer></script>
+<script src="./campaign-comparison.js?v=20260821a" defer></script>
+<script src="./app.js?v=20260821c" defer></script>
 <script src="./charts.js?v=20260816e" defer></script>
 <script src="./connection-insights.js?v=20260819a" defer></script>
 </head>
@@ -35,7 +36,7 @@
   </div>
   <div class="campaign-block"><div class="campaign-heading"><div><h3>現在募集中の企画</h3><small>締切が近い順</small></div></div><div id="openCampaignList" class="campaign-list"></div></div>
   <div class="campaign-columns">
-    <div class="campaign-block"><div class="campaign-heading"><div><h3>参加を確認できた記事</h3><small>現在値と直近7日の動き</small></div></div><div id="confirmedCampaignMatches" class="campaign-match-list"></div><p class="campaign-observation-note">数値は参加記事の観測結果です。企画参加によって増えたと断定するものではありません。</p></div>
+    <div class="campaign-block"><div class="campaign-heading"><div><h3>参加を確認できた記事</h3><small>現在値・直近7日・同条件比較</small></div></div><div id="confirmedCampaignMatches" class="campaign-match-list"></div><p class="campaign-observation-note">比較対象は、同じ分類・同じ公開後日数帯のうち、企画参加の確定記事と要確認候補を除いた記事です。3記事以上ある場合に中央値を表示します。差は観測結果であり、企画参加の効果を示すものではありません。</p></div>
     <div class="campaign-block"><div class="campaign-heading"><div><h3>要確認の候補</h3><small>ハッシュタグは一致、募集期間は未確認</small></div></div><div id="candidateCampaignMatches" class="campaign-match-list"></div></div>
   </div>
   <p id="campaignCoverage" class="method">企画データを読み込んでいます。</p>
