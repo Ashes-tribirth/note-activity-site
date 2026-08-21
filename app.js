@@ -322,6 +322,35 @@ function renderCampaigns(data, articleItems) {
     : "公開中の記事をすべて照合できています。";
 }
 
+function renderTrending(data) {
+  const trending = data.campaignData?.trending;
+  if (!trending) {
+    $("#trendingTopicList").innerHTML = empty("急上昇データを準備中", "次回の正常な観測後に表示します。");
+    $("#trendingCoverage").textContent = "取得結果と照合結果の日付がそろった場合だけ表示します。";
+    return;
+  }
+  const topics = trending.topics || [];
+  const campaignMatches = topics.filter(item => Number(item.officialCampaignCount) > 0).length;
+  const ownMatches = topics.filter(item => Number(item.ownArticleCount) > 0).length;
+  const dateLabel = value => value ? value.slice(5).replace("-", "/") : "—";
+  const topicCard = item => {
+    const badges = [
+      Number(item.officialCampaignCount) > 0 ? `<b class="official">公式企画 ${fmt.format(item.officialCampaignCount)}件</b>` : "",
+      Number(item.ownArticleCount) > 0 ? `<b class="own">自記事 ${fmt.format(item.ownArticleCount)}件</b>` : "",
+    ].filter(Boolean).join("");
+    const articles = (item.ownArticles || []).map(article => `<a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a>`).join("");
+    return `<article class="trending-topic-card"><span>${String(item.rank).padStart(2, "0")}</span><div><a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">${esc(item.topic)}</a><small>初回 ${dateLabel(item.firstSeenDate)} ／ 連続 ${fmt.format(item.consecutiveDays)}日 ／ 7日で ${fmt.format(item.appearances7d)}回</small><div class="trending-badges">${badges}</div>${articles ? `<div class="trending-own-articles">${articles}</div>` : ""}</div></article>`;
+  };
+  $("#trendingTopicCount").textContent = fmt.format(topics.length);
+  $("#trendingCampaignMatchCount").textContent = fmt.format(campaignMatches);
+  $("#trendingOwnMatchCount").textContent = fmt.format(ownMatches);
+  $("#trendingCheckedAt").textContent = `最終観測 ${new Date(trending.checkedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+  $("#trendingTopicList").innerHTML = topics.length ? topics.map(topicCard).join("") : empty("観測語句はありません", "次回の自動更新で再確認します。");
+  $("#trendingCoverage").textContent = trending.unavailableArticleCount
+    ? `公開中の記事のうち${fmt.format(trending.unavailableArticleCount)}件はハッシュタグを確認できていません。`
+    : `公開中の記事${fmt.format(trending.currentArticleCount || 0)}件を照合済みです。`;
+}
+
 function render(data) {
   const summaries = data.summaries || [];
   const latest = summaries.at(-1);
@@ -347,6 +376,7 @@ function render(data) {
   renderCategories(items, dormantKeys);
   renderFeatureComparisons(items);
   renderCampaigns(data, items);
+  renderTrending(data);
   renderPhaseOne(data, activeItems, dormant, latest, dates, items);
 
   window.notePulseData = data;
