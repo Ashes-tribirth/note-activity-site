@@ -283,6 +283,8 @@ function renderCampaigns(data, articleItems) {
   const candidates = campaignData.candidates || [];
   const campaignById = new Map(campaigns.map(item => [item.id, item]));
   const articleByKey = new Map(articleItems.map(item => [item.key, item]));
+  const excludedComparisonKeys = new Set([...matches, ...candidates].map(item => item.articleKey));
+  const observedDate = latestDateOf(data);
   const open = campaigns.filter(item => item.status === "open").sort((a, b) => String(a.endAt).localeCompare(String(b.endAt)));
   const dateLabel = value => value ? value.replaceAll("-", ".") : "期限未確認";
   const remaining = value => {
@@ -298,7 +300,15 @@ function renderCampaigns(data, articleItems) {
     const metrics = !candidate && article
       ? `<dl class="campaign-match-metrics"><div><dt>現在PV</dt><dd>${fmt.format(article.pv)}</dd></div><div><dt>直近7日PV</dt><dd>${article.d7?.pv == null ? "記録中" : signed(article.d7.pv)}</dd></div><div><dt>反応率</dt><dd>${rate.toFixed(1)}%</dd></div></dl>`
       : "";
-    return `<article class="campaign-match ${candidate ? "candidate" : "confirmed"}"><span>${candidate ? "要確認" : "確認済み"}</span><a href="${esc(item.articleUrl)}" target="_blank" rel="noopener noreferrer">${esc(item.articleTitle)}</a><small>${esc(item.campaignHashtag || campaign.hashtag || campaign.title || "公式企画")}</small>${metrics}</article>`;
+    const comparison = !candidate && article && window.NotePulseCampaignComparison
+      ? window.NotePulseCampaignComparison.compare(article, articleItems, excludedComparisonKeys, observedDate)
+      : null;
+    const comparisonHtml = comparison?.ready
+      ? `<div class="campaign-peer-comparison"><b>同条件 ${comparison.peerCount}記事の中央値と比較</b><small>${esc(article.category)} ／ ${esc(comparison.band)}</small><dl><div><dt>直近7日PV</dt><dd>${signed(comparison.articlePv)} <em>中央値 ${fmt.format(comparison.pvMedian)}</em></dd></div><div><dt>反応率</dt><dd>${comparison.articleReaction.toFixed(1)}% <em>中央値 ${comparison.reactionMedian.toFixed(1)}%</em></dd></div></dl></div>`
+      : comparison
+        ? `<div class="campaign-peer-comparison pending"><b>${esc(comparison.reason)}</b><small>${esc(article.category)} ／ ${esc(comparison.band)} ／ 同条件 ${comparison.peerCount}記事（3記事から表示）</small></div>`
+        : "";
+    return `<article class="campaign-match ${candidate ? "candidate" : "confirmed"}"><span>${candidate ? "要確認" : "確認済み"}</span><a href="${esc(item.articleUrl)}" target="_blank" rel="noopener noreferrer">${esc(item.articleTitle)}</a><small>${esc(item.campaignHashtag || campaign.hashtag || campaign.title || "公式企画")}</small>${metrics}${comparisonHtml}</article>`;
   };
   $("#openCampaignCount").textContent = fmt.format(open.length);
   $("#confirmedMatchCount").textContent = fmt.format(new Set(matches.map(item => item.articleKey)).size);
