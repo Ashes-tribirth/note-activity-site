@@ -358,6 +358,47 @@ function renderTrending(data) {
   }
 }
 
+function renderOfficialSelections(data, articleItems) {
+  const selection = data.campaignData?.officialSelections;
+  const status = data.campaignData?.officialSelectionStatus;
+  if (!selection) {
+    const failed = status && !status.ok;
+    $("#officialSelectionCategories").innerHTML = empty(failed ? "公式マガジンの更新に失敗" : "掲載データを準備中", "次回の正常な観測後に表示します。");
+    $("#officialSelectionThemes").innerHTML = empty("共通テーマを準備中", "公式掲載記事と自記事の観測日がそろった場合だけ表示します。");
+    $("#officialSelectionCoverage").textContent = failed ? "取得失敗を記録しました。ほかの実績更新には影響しません。" : "取得結果と照合結果の日付がそろった場合だけ表示します。";
+    return;
+  }
+  const categories = selection.categories || [];
+  const themes = selection.themes || [];
+  const articleByKey = new Map(articleItems.map(item => [item.key, item]));
+  const ownKeys = new Set(themes.flatMap(theme => (theme.ownArticles || []).map(article => article.key)));
+  const categoryCard = item => `<article><span>${esc(item.category)}</span><strong>${fmt.format(item.articleCount)}</strong><small>掲載記事 ／ ${fmt.format(item.authorCount)}作者</small></article>`;
+  const themeCard = item => {
+    const ownArticles = (item.ownArticles || []).map(reference => {
+      const article = articleByKey.get(reference.key);
+      const delta = article?.d7?.pv == null ? "直近7日PV 記録中" : `直近7日PV増分 ${signed(article.d7.pv)}`;
+      return `<a href="${esc(reference.url)}" target="_blank" rel="noopener noreferrer"><span>${esc(reference.title)}</span><small>${delta}</small></a>`;
+    }).join("");
+    const categoriesLabel = (item.sourceCategories || []).join("・");
+    return `<article class="official-selection-theme"><div><strong>${esc(item.tag)}</strong><small>${esc(categoriesLabel)}</small></div><dl><div><dt>公式掲載</dt><dd>${fmt.format(item.officialArticleCount)}記事・${fmt.format(item.officialAuthorCount)}作者</dd></div><div><dt>自記事</dt><dd>${fmt.format(item.ownArticleCount)}記事</dd></div></dl><div class="official-selection-own-articles">${ownArticles}</div></article>`;
+  };
+  const displayTime = value => new Date(value).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  $("#officialSelectedArticleCount").textContent = fmt.format(selection.selectedArticleCount || 0);
+  $("#officialSelectedCategoryCount").textContent = fmt.format(categories.length);
+  $("#officialSelectedThemeCount").textContent = fmt.format(themes.length);
+  $("#officialSelectedOwnArticleCount").textContent = fmt.format(ownKeys.size);
+  $("#officialSelectionCheckedAt").textContent = status && !status.ok ? `更新失敗 ${displayTime(status.checkedAt)}` : `最終観測 ${displayTime(selection.checkedAt)}`;
+  $("#officialSelectionCategories").innerHTML = categories.length ? categories.map(categoryCard).join("") : empty("分類データはありません", "次回の自動更新で再確認します。");
+  $("#officialSelectionThemes").innerHTML = themes.length ? themes.map(themeCard).join("") : empty("共通タグはありません", "タイトルや本文の類似では補完しません。");
+  if (status && !status.ok) {
+    $("#officialSelectionCoverage").textContent = `今回の取得または照合に失敗したため、${displayTime(selection.checkedAt)}の正常データを保持しています。`;
+  } else {
+    $("#officialSelectionCoverage").textContent = selection.unavailableArticleCount
+      ? `自記事${fmt.format(selection.currentArticleCount)}件中、${fmt.format(selection.unavailableArticleCount)}件はハッシュタグを確認できていません。`
+      : `自記事${fmt.format(selection.currentArticleCount)}件を照合済みです。#の有無・全半角・英字大小を正規化し、完全一致だけを表示します。`;
+  }
+}
+
 function render(data) {
   const summaries = data.summaries || [];
   const latest = summaries.at(-1);
@@ -384,6 +425,7 @@ function render(data) {
   renderFeatureComparisons(items);
   renderCampaigns(data, items);
   renderTrending(data);
+  renderOfficialSelections(data, items);
   renderPhaseOne(data, activeItems, dormant, latest, dates, items);
 
   window.notePulseData = data;

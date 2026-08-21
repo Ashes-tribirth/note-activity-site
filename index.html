@@ -10,13 +10,13 @@
 <link rel="stylesheet" href="./style.css?v=20260821e">
 <link rel="stylesheet" href="./activity.css?v=20260816a">
 <link rel="stylesheet" href="./typography.css">
-<link rel="stylesheet" href="./observatory.css">
+<link rel="stylesheet" href="./observatory.css?v=20260821f">
 <link rel="stylesheet" href="./connection-insights.css?v=20260819a">
 <link rel="stylesheet" href="./sky-compass-motif.css">
 <script src="./period-integrity.js?v=20260820a" defer></script>
 <script src="./health-integrity.js?v=20260820a" defer></script>
 <script src="./campaign-comparison.js?v=20260821a" defer></script>
-<script src="./app.js?v=20260821e" defer></script>
+<script src="./app.js?v=20260821f" defer></script>
 <script src="./charts.js?v=20260816e" defer></script>
 <script src="./connection-insights.js?v=20260819a" defer></script>
 </head>
@@ -51,6 +51,19 @@
   <div id="trendingTopicList" class="trending-topic-list"></div>
   <p id="trendingCoverage" class="method">急上昇データを読み込んでいます。</p>
   <p class="campaign-observation-note">noteの公開画面で「急上昇」として確認した語句です。集計方法や対象範囲は公開されていないため、note全体の投稿増加順位とは断定しません。</p>
+</section>
+<section class="panel official-selection-panel">
+  <div class="title"><div><span>OFFICIAL MAGAZINE OBSERVATION</span><h2>note公式マガジン掲載</h2></div><small id="officialSelectionCheckedAt">確認中</small></div>
+  <div class="official-selection-summary" aria-label="公式マガジン掲載の観測状況">
+    <div><span>掲載確認</span><strong id="officialSelectedArticleCount">—</strong><small>記事</small></div>
+    <div><span>対応分類</span><strong id="officialSelectedCategoryCount">—</strong><small>分類</small></div>
+    <div><span>共通タグ</span><strong id="officialSelectedThemeCount">—</strong><small>完全一致</small></div>
+    <div><span>一致した自記事</span><strong id="officialSelectedOwnArticleCount">—</strong><small>記事</small></div>
+  </div>
+  <div class="official-selection-block"><div class="campaign-heading"><div><h3>分類別の掲載確認</h3><small>公式7マガジンの公開ページ</small></div></div><div id="officialSelectionCategories" class="official-selection-categories"></div></div>
+  <div class="official-selection-block"><div class="campaign-heading"><div><h3>自記事と共通するテーマ</h3><small>正規化したハッシュタグの完全一致</small></div></div><div id="officialSelectionThemes" class="official-selection-themes"></div></div>
+  <p id="officialSelectionCoverage" class="method">公式マガジンデータを読み込んでいます。</p>
+  <p class="campaign-observation-note">公式マガジンの公開ページで確認した記事です。掲載基準・追加日時は公開されていないため、人気順位や掲載による効果とは扱いません。自記事の直近7日PV増分は同じ観測画面に並べた実測値であり、掲載との因果関係を示しません。</p>
 </section>
 <section class="follow connection-insights">
   <div class="connection-head"><div><span>CONNECTION TREND</span><h2>つながりの推移</h2><small>増減を主役にして、累計値は補助情報として表示</small></div><small>毎朝自動記録</small></div>
