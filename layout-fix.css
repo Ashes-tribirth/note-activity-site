@@ -1,0 +1,40 @@
+/* Mobile viewport hardening: prevent any wide child from shrinking the whole Safari page. */
+html{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+body{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
+}
+main{
+  width:min(1240px,calc(100% - 40px)) !important;
+  max-width:1240px !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+main>*{min-width:0;max-width:100%;}
+.table-wrap,.activity-history,.article-map,.curve-chart,.connection-visual,
+.campaign-list,.campaign-columns,.campaign-match-list,.trending-topic-list,
+.official-selection-summary,.official-selection-categories,.official-selection-themes{
+  min-width:0;
+  max-width:100%;
+}
+.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+img,svg{max-width:100%;}
+
+@media(max-width:800px){
+  main{width:calc(100% - 24px) !important;max-width:none !important;}
+}
+@media(max-width:520px){
+  main{width:calc(100% - 16px) !important;max-width:none !important;}
+  .stats,.changes{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .health-checks{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .analysis-grid,.campaign-columns,.campaign-list,.trending-topic-list,
+  .official-selection-categories,.official-selection-themes{grid-template-columns:minmax(0,1fr);}
+  .official-selection-summary{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
