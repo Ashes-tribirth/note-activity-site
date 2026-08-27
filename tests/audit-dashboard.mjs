@@ -51,5 +51,11 @@ assert(source["index.html"].includes("企画参加の効果を示すものでは
 assert(source["app.js"].includes('return { key: "new", label: "新出" }'), "急上昇語句の新出判定がありません");
 assert(source["app.js"].includes('return { key: "continuing", label: `連続${fmt.format(consecutive)}日` }'), "急上昇語句の連続判定がありません");
 assert(source["app.js"].includes('return { key: "returning", label: "再浮上" }'), "急上昇語句の再浮上判定がありません");
+assert(source["app.js"].includes("item.rankChange"), "急上昇語句の順位差表示がありません");
+assert(source["app.js"].includes("item.appearances14d"), "急上昇語句の14日観測回数がありません");
+assert(source["index.html"].includes('id="alignmentContent"'), "外部テーマとの関係の表示領域がありません");
+assert(source["app.js"].includes("externalMatchHistoryDays"), "外部テーマ照合の履歴日数が表示されません");
+assert(source["app.js"].includes("matchedPvChange14d"), "外部テーマ一致記事の14日PV比較がありません");
+assert(source["app.js"].includes("noMatchPvChange14d"), "外部テーマ非一致記事の14日PV比較がありません");
 
 console.log(`dashboard audit passed: ${ids.length} unique ids, no CSP-inline conflicts`);

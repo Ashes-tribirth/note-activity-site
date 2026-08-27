@@ -347,13 +347,17 @@ function renderTrending(data) {
   };
   const topicCard = item => {
     const state = observationState(item);
+    const rankChange = Number.isFinite(Number(item.rankChange)) && item.rankChange !== null
+      ? Number(item.rankChange)
+      : null;
     const badges = [
       `<b class="topic-state ${state.key}">${state.label}</b>`,
+      rankChange == null ? "" : `<b class="rank-change ${rankChange > 0 ? "up" : rankChange < 0 ? "down" : "flat"}">順位 ${rankChange > 0 ? "+" : ""}${fmt.format(rankChange)}</b>`,
       Number(item.officialCampaignCount) > 0 ? `<b class="official">公式企画 ${fmt.format(item.officialCampaignCount)}件</b>` : "",
       Number(item.ownArticleCount) > 0 ? `<b class="own">自記事 ${fmt.format(item.ownArticleCount)}件</b>` : "",
     ].filter(Boolean).join("");
     const articles = (item.ownArticles || []).map(article => `<a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a>`).join("");
-    return `<article class="trending-topic-card"><span>${String(item.rank).padStart(2, "0")}</span><div><a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">${esc(item.topic)}</a><small>初回 ${dateLabel(item.firstSeenDate)} ／ 7日で ${fmt.format(item.appearances7d)}回</small><div class="trending-badges">${badges}</div>${articles ? `<div class="trending-own-articles">${articles}</div>` : ""}</div></article>`;
+    return `<article class="trending-topic-card"><span>${String(item.rank).padStart(2, "0")}</span><div><a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">${esc(item.topic)}</a><small>初回 ${dateLabel(item.firstSeenDate)} ／ 7日 ${fmt.format(item.appearances7d)}回 ／ 14日 ${fmt.format(item.appearances14d || item.appearances7d)}回${item.averageRank7d ? ` ／ 7日平均 ${Number(item.averageRank7d).toFixed(1)}位` : ""}</small><div class="trending-badges">${badges}</div>${articles ? `<div class="trending-own-articles">${articles}</div>` : ""}</div></article>`;
   };
   $("#trendingTopicCount").textContent = fmt.format(topics.length);
   $("#trendingCampaignMatchCount").textContent = fmt.format(campaignMatches);
@@ -368,6 +372,24 @@ function renderTrending(data) {
       ? `公開中の記事のうち${fmt.format(trending.unavailableArticleCount)}件はハッシュタグを確認できていません。`
       : `公開中の記事${fmt.format(trending.currentArticleCount || 0)}件を照合済みです。`;
   }
+}
+
+function renderTrendAlignment(data) {
+  const alignment = data.campaignData?.trendAlignment;
+  if (!alignment || !alignment.ready) {
+    const articleDays = Number(alignment?.articleHistoryDays || 0);
+    const matchDays = Number(alignment?.externalMatchHistoryDays || 0);
+    const required = Number(alignment?.requiredDays || 15);
+    $("#alignmentCheckedAt").textContent = "記録中";
+    $("#alignmentContent").innerHTML = empty(
+      "14日比較の履歴を記録中",
+      `記事履歴 ${Math.min(articleDays, required)}/${required}日 ／ 外部テーマ照合 ${Math.min(matchDays, required)}/${required}日`
+    );
+    return;
+  }
+  $("#alignmentCheckedAt").textContent = `${alignment.periodStart.replaceAll("-", ".")} → ${alignment.periodEnd.replaceAll("-", ".")}`;
+  const categories = alignment.categories || [];
+  $("#alignmentContent").innerHTML = `<div class="alignment-summary"><div><span>比較対象</span><strong>${fmt.format(alignment.comparisonArticleCount || 0)}</strong><small>記事</small></div><div><span>期間中の新記事</span><strong>${fmt.format(alignment.excludedNewArticleCount || 0)}</strong><small>同条件比較から除外</small></div></div><div class="alignment-list">${categories.map(item => `<article><h3>${esc(item.category)}</h3><dl><div><dt>外部テーマ一致</dt><dd>${fmt.format(item.matchedArticleCount)}記事 ／ ${signed(item.matchedPvChange14d)} PV</dd></div><div><dt>一致を観測せず</dt><dd>${fmt.format(item.noMatchArticleCount)}記事 ／ ${signed(item.noMatchPvChange14d)} PV</dd></div></dl></article>`).join("")}</div><p class="campaign-observation-note">${esc(alignment.interpretation)}</p>`;
 }
 
 function render(data) {
@@ -396,6 +418,7 @@ function render(data) {
   renderFeatureComparisons(items);
   renderCampaigns(data, items);
   renderTrending(data);
+  renderTrendAlignment(data);
   renderPhaseOne(data, activeItems, dormant, latest, dates, items);
 
   window.notePulseData = data;
