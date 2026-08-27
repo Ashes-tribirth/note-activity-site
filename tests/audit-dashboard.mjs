@@ -47,6 +47,9 @@ assert(source["app.js"].includes('candidate ? "要確認" : "確認済み"'), "�
 assert(source["app.js"].includes("unavailableArticleCount"), "未取得記事の件数が表示されません");
 assert(source["app.js"].includes('class="campaign-match-metrics"'), "参加記事の観測数値がありません");
 assert(source["app.js"].includes('article.d7?.pv == null ? "記録中" : signed(article.d7.pv)'), "参加記事の直近7日PVが記録不足を区別していません");
-assert(source["index.html"].includes("企画参加によって増えたと断定するものではありません"), "参加と伸びを因果関係として誤読させる注意書きがありません");
+assert(source["index.html"].includes("企画参加の効果を示すものではありません"), "参加と伸びを因果関係として誤読させる注意書きがありません");
+assert(source["app.js"].includes('return { key: "new", label: "新出" }'), "急上昇語句の新出判定がありません");
+assert(source["app.js"].includes('return { key: "continuing", label: `連続${fmt.format(consecutive)}日` }'), "急上昇語句の連続判定がありません");
+assert(source["app.js"].includes('return { key: "returning", label: "再浮上" }'), "急上昇語句の再浮上判定がありません");
 
 console.log(`dashboard audit passed: ${ids.length} unique ids, no CSP-inline conflicts`);

@@ -335,13 +335,25 @@ function renderTrending(data) {
   const campaignMatches = topics.filter(item => Number(item.officialCampaignCount) > 0).length;
   const ownMatches = topics.filter(item => Number(item.ownArticleCount) > 0).length;
   const dateLabel = value => value ? value.slice(5).replace("-", "/") : "—";
+  const observationState = item => {
+    const consecutive = Number(item.consecutiveDays) || 0;
+    const appearances = Number(item.appearances7d) || 0;
+    if (String(item.firstSeenDate || "") === String(trending.observationDate || "")) {
+      return { key: "new", label: "新出" };
+    }
+    if (consecutive >= 2) return { key: "continuing", label: `連続${fmt.format(consecutive)}日` };
+    if (appearances >= 2) return { key: "returning", label: "再浮上" };
+    return { key: "observed", label: "観測" };
+  };
   const topicCard = item => {
+    const state = observationState(item);
     const badges = [
+      `<b class="topic-state ${state.key}">${state.label}</b>`,
       Number(item.officialCampaignCount) > 0 ? `<b class="official">公式企画 ${fmt.format(item.officialCampaignCount)}件</b>` : "",
       Number(item.ownArticleCount) > 0 ? `<b class="own">自記事 ${fmt.format(item.ownArticleCount)}件</b>` : "",
     ].filter(Boolean).join("");
     const articles = (item.ownArticles || []).map(article => `<a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a>`).join("");
-    return `<article class="trending-topic-card"><span>${String(item.rank).padStart(2, "0")}</span><div><a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">${esc(item.topic)}</a><small>初回 ${dateLabel(item.firstSeenDate)} ／ 連続 ${fmt.format(item.consecutiveDays)}日 ／ 7日で ${fmt.format(item.appearances7d)}回</small><div class="trending-badges">${badges}</div>${articles ? `<div class="trending-own-articles">${articles}</div>` : ""}</div></article>`;
+    return `<article class="trending-topic-card"><span>${String(item.rank).padStart(2, "0")}</span><div><a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">${esc(item.topic)}</a><small>初回 ${dateLabel(item.firstSeenDate)} ／ 7日で ${fmt.format(item.appearances7d)}回</small><div class="trending-badges">${badges}</div>${articles ? `<div class="trending-own-articles">${articles}</div>` : ""}</div></article>`;
   };
   $("#trendingTopicCount").textContent = fmt.format(topics.length);
   $("#trendingCampaignMatchCount").textContent = fmt.format(campaignMatches);
