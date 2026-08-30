@@ -1,11 +1,13 @@
 const API = "https://sora-note-log.ashestribirth.chatgpt.site/api/data?v=20260817a";
 const fmt = new Intl.NumberFormat("ja-JP");
 const $ = selector => document.querySelector(selector);
-const esc = value => {
-  const node = document.createElement("div");
-  node.textContent = value ?? "";
-  return node.innerHTML;
-};
+const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+})[char]);
 const signed = value => `${value >= 0 ? "+" : ""}${fmt.format(value)}`;
 const days = (from, to) => Math.max(1, Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1);
 let ledgerSort = { key: "d1pv", dir: -1 };
