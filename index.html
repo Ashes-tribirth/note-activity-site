@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>note Pulse</title>
 <meta name="description" content="note活動の実態と進捗を、保存した数値から正確に確認するダッシュボード">
-<link rel="stylesheet" href="./style.css?v=20260827a">
+<link rel="stylesheet" href="./style.css?v=20260901a">
 <link rel="stylesheet" href="./activity.css?v=20260816a">
 <link rel="stylesheet" href="./typography.css">
 <link rel="stylesheet" href="./observatory.css?v=20260821f">
@@ -28,35 +28,6 @@
 <section class="panel health-panel"><div class="title"><div><span>DATA RELIABILITY</span><h2>データの健全性</h2></div><strong id="healthBadge" class="health-badge">確認中</strong></div><div id="healthChecks" class="health-checks"></div></section>
 <section id="changes" class="changes"></section>
 <section id="stats" class="stats"></section>
-<section class="panel campaign-panel">
-  <div class="title"><div><span>OFFICIAL CAMPAIGNS</span><h2>公式企画との照合</h2></div><small id="campaignCheckedAt">確認中</small></div>
-  <div class="campaign-summary" aria-label="公式企画の照合状況">
-    <div><span>募集中</span><strong id="openCampaignCount">—</strong><small>公式企画</small></div>
-    <div><span>参加確認</span><strong id="confirmedMatchCount">—</strong><small>記事</small></div>
-    <div><span>要確認</span><strong id="candidateMatchCount">—</strong><small>候補</small></div>
-  </div>
-  <div class="campaign-block"><div class="campaign-heading"><div><h3>現在募集中の企画</h3><small>締切が近い順</small></div></div><div id="openCampaignList" class="campaign-list"></div></div>
-  <div class="campaign-columns">
-    <div class="campaign-block"><div class="campaign-heading"><div><h3>参加を確認できた記事</h3><small>現在値・直近7日・同条件比較</small></div></div><div id="confirmedCampaignMatches" class="campaign-match-list"></div><p class="campaign-observation-note">比較対象は、同じ分類・同じ公開後日数帯のうち、企画参加の確定記事と要確認候補を除いた記事です。3記事以上ある場合に中央値を表示します。差は観測結果であり、企画参加の効果を示すものではありません。</p></div>
-    <div class="campaign-block"><div class="campaign-heading"><div><h3>要確認の候補</h3><small>ハッシュタグは一致、募集期間は未確認</small></div></div><div id="candidateCampaignMatches" class="campaign-match-list"></div></div>
-  </div>
-  <p id="campaignCoverage" class="method">企画データを読み込んでいます。</p>
-</section>
-<section class="panel trending-panel">
-  <div class="title"><div><span>PUBLIC TRENDING TOPICS</span><h2>note公開画面の急上昇</h2></div><small id="trendingCheckedAt">確認中</small></div>
-  <div class="trending-summary" aria-label="急上昇ワードの観測状況">
-    <div><span>本日の観測</span><strong id="trendingTopicCount">—</strong><small>語句</small></div>
-    <div><span>公式企画一致</span><strong id="trendingCampaignMatchCount">—</strong><small>語句</small></div>
-    <div><span>自記事一致</span><strong id="trendingOwnMatchCount">—</strong><small>語句</small></div>
-  </div>
-  <div id="trendingTopicList" class="trending-topic-list"></div>
-  <p id="trendingCoverage" class="method">急上昇データを読み込んでいます。</p>
-  <p class="campaign-observation-note">新出＝今回初めて観測、連続＝2日以上続けて観測、再浮上＝直前はなく過去7日内に再び観測。noteの公開画面で「急上昇」として確認した語句であり、集計方法や対象範囲は公開されていないため、note全体の投稿増加順位とは断定しません。</p>
-</section>
-<section class="panel alignment-panel">
-  <div class="title"><div><span>EXTERNAL THEME ALIGNMENT</span><h2>外部テーマとの関係</h2></div><small id="alignmentCheckedAt">記録中</small></div>
-  <div id="alignmentContent"></div>
-</section>
 <section class="follow connection-insights">
   <div class="connection-head"><div><span>CONNECTION TREND</span><h2>つながりの推移</h2><small>増減を主役にして、累計値は補助情報として表示</small></div><small>毎朝自動記録</small></div>
   <div class="connection-summary">
@@ -81,6 +52,38 @@
 <section class="panel fair"><div class="title"><div><span>LIFETIME PACE</span><h2>公開後の平均PVペース</h2></div><small>累計PV ÷ 公開日数</small></div><div id="fairList" class="fair-list"></div></section>
 <section class="panel"><div class="title"><div><span>CONTENT TYPES</span><h2>記事タイプ別の比較</h2></div><small>同じ計算式で比較</small></div><div id="categories" class="categories"></div><p class="method">構成比＝カテゴリ記事数÷全記事数。スキ率・総コメント率＝各反応数÷PV。記録PV／記事＝分析期間の増加PV÷カテゴリ記事数です。7日分が貯まるまでは記録開始日からの暫定値です。</p></section>
 <section class="panel"><div class="title"><div><span>CONTENT SIGNALS</span><h2>記事の特徴別比較</h2></div><small>事実として取得できる特徴</small></div><div id="featureComparisons" class="feature-comparisons"></div><p class="method">スキ率・総コメント率＝累計反応数÷累計PV。本文量は全記事の中央値で二分します。差は傾向であり、その特徴が反応を生んだという因果関係を示すものではありません。</p></section>
+<section class="external-observations" aria-labelledby="externalObservationsTitle">
+  <div class="external-observations-head"><div><span>PHASE 2</span><h2 id="externalObservationsTitle">note外部動向</h2></div><p>自記事の実績を確認した後に見る補助情報</p></div>
+  <section class="panel campaign-panel">
+    <div class="title"><div><span>OFFICIAL CAMPAIGNS</span><h2>公式企画との照合</h2></div><small id="campaignCheckedAt">確認中</small></div>
+    <div class="campaign-summary" aria-label="公式企画の照合状況">
+      <div><span>募集中</span><strong id="openCampaignCount">—</strong><small>公式企画</small></div>
+      <div><span>参加確認</span><strong id="confirmedMatchCount">—</strong><small>記事</small></div>
+      <div><span>要確認</span><strong id="candidateMatchCount">—</strong><small>候補</small></div>
+    </div>
+    <div class="campaign-block"><div class="campaign-heading"><div><h3>現在募集中の企画</h3><small>締切が近い順</small></div></div><div id="openCampaignList" class="campaign-list"></div></div>
+    <div class="campaign-columns">
+      <div class="campaign-block"><div class="campaign-heading"><div><h3>参加を確認できた記事</h3><small>現在値・直近7日・同条件比較</small></div></div><div id="confirmedCampaignMatches" class="campaign-match-list"></div><p class="campaign-observation-note">比較対象は、同じ分類・同じ公開後日数帯のうち、企画参加の確定記事と要確認候補を除いた記事です。3記事以上ある場合に中央値を表示します。差は観測結果であり、企画参加の効果を示すものではありません。</p></div>
+      <div class="campaign-block"><div class="campaign-heading"><div><h3>要確認の候補</h3><small>ハッシュタグは一致、募集期間は未確認</small></div></div><div id="candidateCampaignMatches" class="campaign-match-list"></div></div>
+    </div>
+    <p id="campaignCoverage" class="method">企画データを読み込んでいます。</p>
+  </section>
+  <section class="panel trending-panel">
+    <div class="title"><div><span>PUBLIC TRENDING TOPICS</span><h2>note公開画面の急上昇</h2></div><small id="trendingCheckedAt">確認中</small></div>
+    <div class="trending-summary" aria-label="急上昇ワードの観測状況">
+      <div><span>本日の観測</span><strong id="trendingTopicCount">—</strong><small>語句</small></div>
+      <div><span>公式企画一致</span><strong id="trendingCampaignMatchCount">—</strong><small>語句</small></div>
+      <div><span>自記事一致</span><strong id="trendingOwnMatchCount">—</strong><small>語句</small></div>
+    </div>
+    <div id="trendingTopicList" class="trending-topic-list"></div>
+    <p id="trendingCoverage" class="method">急上昇データを読み込んでいます。</p>
+    <p class="campaign-observation-note">新出＝今回初めて観測、連続＝2日以上続けて観測、再浮上＝直前はなく過去7日内に再び観測。noteの公開画面で「急上昇」として確認した語句であり、集計方法や対象範囲は公開されていないため、note全体の投稿増加順位とは断定しません。</p>
+  </section>
+  <section class="panel alignment-panel">
+    <div class="title"><div><span>EXTERNAL THEME ALIGNMENT</span><h2>外部テーマとの関係</h2></div><small id="alignmentCheckedAt">記録中</small></div>
+    <div id="alignmentContent"></div>
+  </section>
+</section>
 <section class="data-status"><div><span>DATA STATUS</span><h2>この画面の数字について</h2></div><ul><li><b>最終取得</b><span id="lastFetched">—</span></li><li><b>更新頻度</b>毎朝6:20ごろ</li><li><b>記録状態</b><span id="dataState">接続確認中</span></li><li><b>比較方法</b>累計値の差から期間内の増加を算出</li></ul><p>日数が足りない比較は、推測値を出さず「記録中」と表示します。</p></section>
 <footer><b>note Pulse</b><small>Data since 2026.08.13</small></footer>
 </main>

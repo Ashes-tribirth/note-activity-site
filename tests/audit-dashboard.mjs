@@ -57,5 +57,10 @@ assert(source["index.html"].includes('id="alignmentContent"'), "外部テーマ�
 assert(source["app.js"].includes("externalMatchHistoryDays"), "外部テーマ照合の履歴日数が表示されません");
 assert(source["app.js"].includes("matchedPvChange14d"), "外部テーマ一致記事の14日PV比較がありません");
 assert(source["app.js"].includes("noMatchPvChange14d"), "外部テーマ非一致記事の14日PV比較がありません");
+const ownAnalysisPosition = source["index.html"].indexOf('id="featureComparisons"');
+const externalPosition = source["index.html"].indexOf('class="external-observations"');
+assert(ownAnalysisPosition >= 0 && externalPosition > ownAnalysisPosition, "外部動向が自記事分析より前に表示されています");
+assert(!source["index.html"].includes("公式マガジン掲載"), "価値検証で除外した公式マガジン欄が再追加されています");
+assert(!source["index.html"].includes("複数作者の共通"), "採用しない共通タグ機能が画面に追加されています");
 
 console.log(`dashboard audit passed: ${ids.length} unique ids, no CSP-inline conflicts`);
