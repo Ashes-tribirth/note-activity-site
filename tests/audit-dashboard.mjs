@@ -23,7 +23,13 @@ assert(source["app.js"].includes("commentRate = Number(row.comments || 0) / Math
 assert(source["app.js"].includes("pvPerArticle = Number(row.d7 || 0) / Math.max(count, 1)"), "記事タイプ別の記録PVが記事数で正規化されていません");
 assert(source["app.js"].includes('<svg class="mixbar"'), "記事年齢の構成比がSVG化されていません");
 assert(source["charts.js"].includes("const factor = intervalHours && intervalHours > 0 ? 24 / intervalHours : 1"), "活動量が24時間換算されていません");
-assert(source["index.html"].includes("累計PV ÷ 公開日数"), "平均PVペースの計算根拠が画面にありません");
+assert(!source["index.html"].includes("累計PV ÷ 公開日数"), "価値の低い平均PVペースが残っています");
+assert(source["index.html"].includes('href="https://note.com/sitesettings/stats"'), "公式ダッシュボードへの正しい導線がありません");
+assert(source["index.html"].includes('rel="noopener noreferrer"'), "公式ダッシュボード導線の安全属性がありません");
+assert(source["index.html"].includes("従来ビュー"), "旧指標と新しいページビューを区別する説明がありません");
+assert(csp.includes("frame-src 'none'"), "埋め込み不可の公式画面を読み込まないCSPになっていません");
+assert(!source["index.html"].includes('id="articleMap"'), "旧ビューをPVとみなす記事分布が残っています");
+assert(!source["index.html"].includes('id="featureComparisons"'), "分析価値の低い特徴別比較が残っています");
 assert(!source["index.html"].includes("charts.css"), "空のcharts.css参照が残っています");
 assert(!source["period-integrity.js"].includes("window.render"), "描画関数の後付け上書きが残っています");
 assert(!source["health-integrity.js"].includes("window.render"), "健全性描画の後付け上書きが残っています");
@@ -57,7 +63,7 @@ assert(source["index.html"].includes('id="alignmentContent"'), "外部テーマ�
 assert(source["app.js"].includes("externalMatchHistoryDays"), "外部テーマ照合の履歴日数が表示されません");
 assert(source["app.js"].includes("matchedPvChange14d"), "外部テーマ一致記事の14日PV比較がありません");
 assert(source["app.js"].includes("noMatchPvChange14d"), "外部テーマ非一致記事の14日PV比較がありません");
-const ownAnalysisPosition = source["index.html"].indexOf('id="featureComparisons"');
+const ownAnalysisPosition = source["index.html"].indexOf('id="categories"');
 const externalPosition = source["index.html"].indexOf('class="external-observations"');
 assert(ownAnalysisPosition >= 0 && externalPosition > ownAnalysisPosition, "外部動向が自記事分析より前に表示されています");
 assert(!source["index.html"].includes("公式マガジン掲載"), "価値検証で除外した公式マガジン欄が再追加されています");

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://sora-note-log.ashestribirth.chatgpt.site; style-src 'self'; script-src 'self'; img-src 'self' https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://sora-note-log.ashestribirth.chatgpt.site; style-src 'self'; script-src 'self'; img-src 'self' https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>note Pulse</title>
 <meta name="description" content="note活動の実態と進捗を、保存した数値から正確に確認するダッシュボード">
@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="./connection-insights.css?v=20260819a">
 <link rel="stylesheet" href="./sky-compass-motif.css?v=20260822a">
 <link rel="stylesheet" href="./layout-fix.css?v=20260822a">
+<link rel="stylesheet" href="./official-dashboard.css?v=20260909a">
 <script src="./period-integrity.js?v=20260820a" defer></script>
 <script src="./health-integrity.js?v=20260820a" defer></script>
 <script src="./campaign-comparison.js?v=20260821a" defer></script>
@@ -25,9 +26,10 @@
 <main>
 <header><a class="brand" href="./"><b><img class="sky-light" src="https://raw.githubusercontent.com/Ashes-tribirth/note-tools-site/main/favi_sky_Compass_light.png" alt=""><img class="sky-dark" src="https://raw.githubusercontent.com/Ashes-tribirth/note-tools-site/main/favi_sky_Compass_dark.png" alt=""></b><span><strong>note Pulse</strong><small>ACTIVITY OBSERVATORY</small></span></a><div><span id="status" class="status">● 接続確認中</span><button id="theme" type="button" aria-label="ダークモードに切り替える" aria-pressed="false">☾</button></div></header>
 <section class="record-strip"><div><span>LAST RECORD</span><strong id="recordDate">--.--</strong><small id="recordTime">--:-- JST</small></div><p id="recordCount">対象 —記事</p><small>保存した実数のみで集計</small></section>
+<section class="official-dashboard" aria-labelledby="officialDashboardTitle"><div><span>OFFICIAL DASHBOARD</span><h2 id="officialDashboardTitle">現在の一次データはnote公式で確認</h2><p>インプレッション、ページビュー、流入元、記事別の現在値は公式ダッシュボードを使用します。</p></div><a href="https://note.com/sitesettings/stats" target="_blank" rel="noopener noreferrer">公式ダッシュボードを開く</a></section>
+<section class="metric-transition panel"><strong>指標切替のお知らせ</strong><p>2026年9月8日の公式刷新以前に保存した「ビュー」は、現在の「ページビュー」と定義が異なります。この画面では既存値を「従来ビュー」として保持し、新しいページビューと混在させません。</p></section>
 <section class="panel health-panel"><div class="title"><div><span>DATA RELIABILITY</span><h2>データの健全性</h2></div><strong id="healthBadge" class="health-badge">確認中</strong></div><div id="healthChecks" class="health-checks"></div></section>
 <section id="changes" class="changes"></section>
-<section id="stats" class="stats"></section>
 <section class="follow connection-insights">
   <div class="connection-head"><div><span>CONNECTION TREND</span><h2>つながりの推移</h2><small>増減を主役にして、累計値は補助情報として表示</small></div><small>毎朝自動記録</small></div>
   <div class="connection-summary">
@@ -38,20 +40,16 @@
   <div class="connection-visual"><div class="connection-visual-head"><div><h3>期間比較</h3><small>必要な履歴が揃った期間だけ数値化</small></div></div><div id="followerPeriodCompare" class="connection-periods"></div></div>
   <div class="connection-visual"><div class="connection-visual-head"><div><h3>フォロワー累計推移</h3><small>現在値の流れを確認する補助グラフ</small></div></div><div id="followerTotalChart" aria-label="フォロワー累計推移"></div><p class="connection-note">累計グラフはフォロワーのみを表示します。フォロー中との比較は行いません。</p></div>
 </section>
-<section class="panel trend"><div class="title"><div><span>ACTIVITY HISTORY</span><h2>活動の推移</h2></div><small id="days">記録 —日目</small></div><div class="chart-toolbar" data-chart="activity"><span>表示範囲</span><div class="range-switch" role="group" aria-label="活動の推移の表示範囲"><button type="button" data-range="30" class="active" aria-pressed="true">30日</button><button type="button" data-range="90" aria-pressed="false">90日</button><button type="button" data-range="all" aria-pressed="false">全期間</button></div></div><div id="trendBars" class="activity-history" aria-label="24時間換算したPV・スキ・コメント増加量"></div><p id="trendNote">データを読み込んでいます</p></section>
 <section class="grid analysis-grid">
 <article class="panel"><div class="title"><div><span>PERIOD COMPARISON</span><h2>同じ長さの期間で比較</h2></div><small>直近 vs その前</small></div><div id="periodCompare" class="period-compare"></div></article>
-<article class="panel"><div class="title"><div><span>PV COMPOSITION</span><h2>伸びを記事年齢で分解</h2></div><small>前回取得からの実測増加PV</small></div><div id="ageMix" class="age-mix"></div></article>
+<article class="panel"><div class="title"><div><span>LEGACY VIEW COMPOSITION</span><h2>伸びを記事年齢で分解</h2></div><small>前回取得からの実測増加の従来ビュー</small></div><div id="ageMix" class="age-mix"></div></article>
 </section>
 <section class="grid analysis-grid">
-<article class="panel"><div class="title"><div><span>ARTICLE MAP</span><h2>記事の現在地</h2></div><small>PV × 反応率</small></div><div id="articleMap" class="article-map" role="img" aria-label="記事のPVと反応率の分布"></div><p class="method">円に触れると記事名と数値を確認できます。反応率＝（スキ＋コメント）÷PV。</p></article>
-<article class="panel"><div class="title"><div><span>GROWTH CURVE</span><h2>記事ごとの推移</h2></div></div><select id="curveSelect" aria-label="推移を表示する記事"></select><div id="curveChart" class="curve-chart"></div><p id="curveNote" class="method"></p></article>
+<article class="panel"><div class="title"><div><span>GROWTH CURVE</span><h2>記事ごとの従来ビュー推移</h2></div></div><select id="curveSelect" aria-label="推移を表示する記事"></select><div id="curveChart" class="curve-chart"></div><p id="curveNote" class="method"></p></article>
 </section>
-<section class="panel article-ledger"><div class="title"><div><span>ARTICLE LEDGER</span><h2>公開中の記事分析表</h2></div><small>列見出しで並べ替え</small></div><div class="ledger-notes" aria-label="分析表の項目説明"><div><b>前回差PV</b><span>前回の収集時から増えたPV</span></div><div><b>7日PV</b><span>直近7日間で増えたPV</span></div><div><b>反応率</b><span>（スキ＋コメント）÷PV</span></div><div><b>状態</b><span>直近7日で数値が動いたか</span></div></div><p class="ledger-note-caution">※ 7日分の履歴が貯まるまでは、7日PV・状態は記録開始からの暫定値です。必要な日付が欠けた場合は推測せず「記録中」と表示します。</p><div class="ledger-tools"><input id="ledgerSearch" placeholder="記事名を検索" aria-label="分析表の記事名を検索"><select id="categoryFilter" aria-label="分類で絞り込む"><option value="">すべての分類</option></select><select id="statusFilter" aria-label="状態で絞り込む"><option value="">すべての状態</option><option value="active">動きあり</option><option value="dormant">7日間動きなし</option></select></div><div class="table-wrap"><table><thead><tr><th data-sort="title">記事</th><th data-sort="category">分類</th><th data-sort="publishedAt">公開日</th><th data-sort="pv">PV</th><th data-sort="likes">スキ</th><th data-sort="comments">コメント</th><th data-sort="d1pv">前回差PV</th><th data-sort="d7pv">7日PV</th><th data-sort="rate">反応率</th><th data-sort="status">状態</th></tr></thead><tbody id="ledgerBody"></tbody></table></div></section>
-<section class="panel dormant-panel"><div class="title"><div><span>DORMANT ARTICLES</span><h2>動きのない記事</h2></div><strong id="dormantCount">—</strong></div><p id="dormantBasis" class="method">直近7日間のPV・スキ・コメントで判定します。</p><div id="dormantSummary" class="dormant-summary"></div><p class="method">対象記事は「公開中の記事分析表」の状態フィルターで確認できます。</p></section>
-<section class="panel fair"><div class="title"><div><span>LIFETIME PACE</span><h2>公開後の平均PVペース</h2></div><small>累計PV ÷ 公開日数</small></div><div id="fairList" class="fair-list"></div></section>
-<section class="panel"><div class="title"><div><span>CONTENT TYPES</span><h2>記事タイプ別の比較</h2></div><small>同じ計算式で比較</small></div><div id="categories" class="categories"></div><p class="method">構成比＝カテゴリ記事数÷全記事数。スキ率・総コメント率＝各反応数÷PV。記録PV／記事＝分析期間の増加PV÷カテゴリ記事数です。7日分が貯まるまでは記録開始日からの暫定値です。</p></section>
-<section class="panel"><div class="title"><div><span>CONTENT SIGNALS</span><h2>記事の特徴別比較</h2></div><small>事実として取得できる特徴</small></div><div id="featureComparisons" class="feature-comparisons"></div><p class="method">スキ率・総コメント率＝累計反応数÷累計PV。本文量は全記事の中央値で二分します。差は傾向であり、その特徴が反応を生んだという因果関係を示すものではありません。</p></section>
+<section class="panel article-ledger"><div class="title"><div><span>ARTICLE LEDGER</span><h2>公開中の記事分析表</h2></div><small>列見出しで並べ替え</small></div><div class="ledger-notes" aria-label="分析表の項目説明"><div><b>前回差ビュー</b><span>前回の収集時から増えた従来ビュー</span></div><div><b>7日ビュー</b><span>直近7日間で増えた従来ビュー</span></div><div><b>反応比</b><span>（スキ＋コメント）÷従来ビュー。現在のPV反応率ではありません</span></div><div><b>状態</b><span>直近7日で数値が動いたか</span></div></div><p class="ledger-note-caution">※ 7日分の履歴が貯まるまでは、7日ビュー・状態は記録開始からの暫定値です。必要な日付が欠けた場合は推測せず「記録中」と表示します。</p><div class="ledger-tools"><input id="ledgerSearch" placeholder="記事名を検索" aria-label="分析表の記事名を検索"><select id="categoryFilter" aria-label="分類で絞り込む"><option value="">すべての分類</option></select><select id="statusFilter" aria-label="状態で絞り込む"><option value="">すべての状態</option><option value="active">動きあり</option><option value="dormant">7日間動きなし</option></select></div><div class="table-wrap"><table><thead><tr><th data-sort="title">記事</th><th data-sort="category">分類</th><th data-sort="publishedAt">公開日</th><th data-sort="pv">従来ビュー</th><th data-sort="likes">スキ</th><th data-sort="comments">コメント</th><th data-sort="d1pv">前回差ビュー</th><th data-sort="d7pv">7日ビュー</th><th data-sort="rate">反応比</th><th data-sort="status">状態</th></tr></thead><tbody id="ledgerBody"></tbody></table></div></section>
+<section class="panel dormant-panel"><div class="title"><div><span>DORMANT ARTICLES</span><h2>動きのない記事</h2></div><strong id="dormantCount">—</strong></div><p id="dormantBasis" class="method">直近7日間の従来ビュー・スキ・コメントで判定します。</p><div id="dormantSummary" class="dormant-summary"></div><p class="method">対象記事は「公開中の記事分析表」の状態フィルターで確認できます。</p></section>
+<section class="panel"><div class="title"><div><span>CONTENT TYPES</span><h2>記事タイプ別の比較</h2></div><small>同じ計算式で比較</small></div><div id="categories" class="categories"></div><p class="method">構成比＝カテゴリ記事数÷全記事数。スキ比・コメント比＝各反応数÷従来ビューであり、現在のPV反応率ではありません。記録ビュー／記事＝分析期間の従来ビュー増加÷カテゴリ記事数です。</p></section>
 <section class="external-observations" aria-labelledby="externalObservationsTitle">
   <div class="external-observations-head"><div><span>PHASE 2</span><h2 id="externalObservationsTitle">note外部動向</h2></div><p>自記事の実績を確認した後に見る補助情報</p></div>
   <section class="panel campaign-panel">

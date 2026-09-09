@@ -122,13 +122,14 @@ function renderHeaderAndTotals(data, latest, previous, intervalLabel) {
   const monthDelta = month ? deltaBetween(data, rowDate(month.baseline), rowDate(month.latest), data.articles || []) : null;
 
   $("#changes").innerHTML =
-    change(intervalLabel, previousDelta?.pv || 0, previousDelta ? `スキ ${signed(previousDelta.likes)} ／ コメント ${signed(previousDelta.comments)}` : "", Boolean(previousDelta), "PV") +
-    change("7日間", weekDelta?.pv || 0, weekDelta ? `スキ ${signed(weekDelta.likes)} ／ コメント ${signed(weekDelta.comments)}` : "", Boolean(weekDelta), "PV") +
-    change("30日間", monthDelta?.pv || 0, monthDelta ? `スキ ${signed(monthDelta.likes)} ／ コメント ${signed(monthDelta.comments)}` : "", Boolean(monthDelta), "PV") +
+    change(intervalLabel, previousDelta?.pv || 0, previousDelta ? `スキ ${signed(previousDelta.likes)} ／ コメント ${signed(previousDelta.comments)}` : "", Boolean(previousDelta), "従来ビュー") +
+    change("7日間", weekDelta?.pv || 0, weekDelta ? `スキ ${signed(weekDelta.likes)} ／ コメント ${signed(weekDelta.comments)}` : "", Boolean(weekDelta), "従来ビュー") +
+    change("30日間", monthDelta?.pv || 0, monthDelta ? `スキ ${signed(monthDelta.likes)} ／ コメント ${signed(monthDelta.comments)}` : "", Boolean(monthDelta), "従来ビュー") +
     change("フォロワー前回比", followerReady ? Number(follow.followerCount) - Number(previousFollow.followerCount) : 0, `現在 ${fmt.format(Number(follow.followerCount) || 0)}人`, followerReady, "人");
 
-  $("#stats").innerHTML =
-    stat("TOTAL PV", latest.totalPv, "累計閲覧数", "pv") +
+  const stats = $("#stats");
+  if (stats) stats.innerHTML =
+    stat("LEGACY VIEWS", latest.totalPv, "従来ビュー累計", "pv") +
     stat("LIKES", latest.totalLikes, `平均 ${(latest.totalLikes / latest.articleCount).toFixed(1)} / 記事`, "likes") +
     stat("COMMENTS", latest.totalComments, `平均 ${(latest.totalComments / latest.articleCount).toFixed(1)} / 記事`, "comments") +
     stat("ARTICLES", latest.articleCount, "記録対象", "articles");
@@ -136,7 +137,8 @@ function renderHeaderAndTotals(data, latest, previous, intervalLabel) {
   $("#following").textContent = follow.followingCount == null ? "—" : fmt.format(follow.followingCount);
   $("#followers").textContent = follow.followerCount == null ? "—" : fmt.format(follow.followerCount);
   $("#followDiff").textContent = followerReady ? signed(Number(follow.followerCount) - Number(previousFollow.followerCount)) : "記録中";
-  $("#days").textContent = `記録 ${summaries.length}日目`;
+  const daysLabel = $("#days");
+  if (daysLabel) daysLabel.textContent = `記録 ${summaries.length}日目`;
 }
 
 function renderPeriodComparison(data) {
@@ -150,7 +152,7 @@ function renderPeriodComparison(data) {
     const previous = deltaBetween(data, rowDate(window.baseline), middle);
     const difference = current.pv - previous.pv;
     const rate = previous.pv ? difference / previous.pv * 100 : null;
-    return `<div class="period-row"><b>${length}日</b><span>直近 <strong>${signed(current.pv)}</strong> PV</span><span>前期間 ${signed(previous.pv)} PV</span><em class="${difference >= 0 ? "up" : "down"}">${signed(difference)} / ${rate == null ? "—" : `${signed(Math.round(rate))}%`}</em><small>スキ ${signed(current.likes)}（前期間 ${signed(previous.likes)}）</small></div>`;
+    return `<div class="period-row"><b>${length}日</b><span>直近 <strong>${signed(current.pv)}</strong> 従来ビュー</span><span>前期間 ${signed(previous.pv)} 従来ビュー</span><em class="${difference >= 0 ? "up" : "down"}">${signed(difference)} / ${rate == null ? "—" : `${signed(Math.round(rate))}%`}</em><small>スキ ${signed(current.likes)}（前期間 ${signed(previous.likes)}）</small></div>`;
   }).join("");
 }
 
@@ -164,20 +166,20 @@ function renderDormant(dormant) {
     const first = periodState.historyDates[0];
     const span = Math.max(1, Math.round((Date.parse(`${latest}T00:00:00Z`) - Date.parse(`${first}T00:00:00Z`)) / DAY_MS));
     $("#dormantCount").textContent = `${dormant.length}記事`;
-    $("#dormantBasis").textContent = `記録開始から${span}日間、PV・スキ・コメントがすべて変わっていない記事です。7日分が貯まるまでは暫定判定です。`;
+    $("#dormantBasis").textContent = `記録開始から${span}日間、従来ビュー・スキ・コメントがすべて変わっていない記事です。7日分が貯まるまでは暫定判定です。`;
   } else if (mode === "gap") {
     $("#dormantCount").textContent = "判定待ち";
     $("#dormantBasis").textContent = "直近7日間の記録に欠けがあるため、7日判定は記録中です。";
     dormant = [];
   } else {
     $("#dormantCount").textContent = `${dormant.length}記事`;
-    $("#dormantBasis").textContent = "直近7日間、PV・スキ・コメントがすべて変わっていない記事です。";
+    $("#dormantBasis").textContent = "直近7日間、従来ビュー・スキ・コメントがすべて変わっていない記事です。";
   }
   const pv = dormant.reduce((sum, article) => sum + article.pv, 0);
   const likes = dormant.reduce((sum, article) => sum + article.likes, 0);
   const waiting = ["waiting", "gap"].includes(mode);
   $("#dormantSummary").innerHTML = dormant.length
-    ? `<div><span>対象</span><b>${dormant.length}記事</b></div><div><span>累計PV</span><b>${fmt.format(pv)}</b></div><div><span>累計スキ</span><b>${fmt.format(likes)}</b></div>`
+    ? `<div><span>対象</span><b>${dormant.length}記事</b></div><div><span>累計従来ビュー</span><b>${fmt.format(pv)}</b></div><div><span>累計スキ</span><b>${fmt.format(likes)}</b></div>`
     : empty(waiting ? "判定待ち" : "該当なし", mode === "gap" ? "欠けた日付があるため推測せず判定を保留しています。" : mode === "waiting" ? "次回記録後から動きの有無を判定します。" : "動きのない記事はありません。");
 }
 

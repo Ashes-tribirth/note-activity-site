@@ -109,17 +109,6 @@ function prepareData(raw) {
   return addApprovedFollowerBackfill(filterCurrentArticles(raw));
 }
 
-function renderFairComparison(activeItems, latest) {
-  const fair = activeItems
-    .filter(article => article.publishedAt)
-    .sort((a, b) => b.pv / days(b.publishedAt, latest.date) - a.pv / days(a.publishedAt, latest.date))
-    .slice(0, 6);
-
-  $("#fairList").innerHTML = fair.length
-    ? fair.map((article, index) => linkRow(article, index, (article.pv / days(article.publishedAt, latest.date)).toFixed(1), "PV/日", "fair-row")).join("")
-    : empty("公開日の取得準備中", "次回の自動取得から、1日当たりPVと公開後7日間を比較します。");
-}
-
 function categoryShareBar(count, total, name) {
   const share = count / Math.max(total, 1) * 100;
   return `<svg class="category-share" viewBox="0 0 100 5" preserveAspectRatio="none" role="img" aria-label="${esc(name)}は全${total}記事中${count}記事、構成比${share.toFixed(1)}%"><rect class="category-track" x="0" y="0" width="100" height="5"></rect><rect class="category-fill" x="0" y="0" width="${share}" height="5"><title>${esc(name)} ${count}記事／全${total}記事（${share.toFixed(1)}%）</title></rect></svg>`;
@@ -133,47 +122,7 @@ function categoryMetrics(row, totalCount, activityReady = true) {
   const commentRate = Number(row.comments || 0) / Math.max(pv, 1) * 100;
   const pvPerArticle = Number(row.d7 || 0) / Math.max(count, 1);
   const activity = activityReady ? pvPerArticle.toFixed(1) : "記録中";
-  return `<dl class="category-metrics"><div><dt>構成比</dt><dd>${share.toFixed(1)}%</dd></div><div><dt>スキ率</dt><dd>${likeRate.toFixed(1)}%</dd></div><div><dt>総コメント率</dt><dd>${commentRate.toFixed(1)}%</dd></div><div><dt>記録PV／記事</dt><dd>${activity}</dd></div></dl>`;
-}
-
-function featureAggregate(items) {
-  return items.reduce((sum, article) => {
-    sum.count += 1;
-    sum.pv += Number(article.pv || 0);
-    sum.likes += Number(article.likes || 0);
-    sum.comments += Number(article.comments || 0);
-    if (article.d7?.pv != null) sum.periodPv += Number(article.d7.pv || 0);
-    return sum;
-  }, { count: 0, pv: 0, likes: 0, comments: 0, periodPv: 0 });
-}
-
-function featureMetricCard(label, items, periodReady) {
-  const row = featureAggregate(items);
-  const likeRate = row.likes / Math.max(row.pv, 1) * 100;
-  const commentRate = row.comments / Math.max(row.pv, 1) * 100;
-  const periodPv = periodReady ? (row.periodPv / Math.max(row.count, 1)).toFixed(1) : "記録中";
-  return `<article><h4>${esc(label)}</h4><b>${row.count}記事</b><dl><div><dt>スキ率</dt><dd>${likeRate.toFixed(1)}%</dd></div><div><dt>総コメント率</dt><dd>${commentRate.toFixed(1)}%</dd></div><div><dt>記録PV／記事</dt><dd>${periodPv}</dd></div></dl></article>`;
-}
-
-function renderFeatureComparisons(items) {
-  const measured = items.filter(article => article.features && Number.isFinite(Number(article.features.bodyLength)));
-  if (!measured.length) {
-    $("#featureComparisons").innerHTML = empty("記事特徴を準備中", "次回のデータ連携後に表示します。");
-    return;
-  }
-  const lengths = measured.map(article => Number(article.features.bodyLength)).sort((a, b) => a - b);
-  const median = lengths[Math.floor(lengths.length / 2)];
-  const periodReady = !["gap", "waiting"].includes(periodState.mode);
-  const groups = [
-    { name: "動画", yes: "動画あり", no: "動画なし", test: article => article.features.hasVideo === true },
-    { name: "問いかけ", yes: "問いかけあり", no: "問いかけなし", test: article => article.features.hasReaderQuestion === true },
-    { name: "本文量", yes: `本文 ${fmt.format(median)}字以上`, no: `本文 ${fmt.format(median)}字未満`, test: article => Number(article.features.bodyLength) >= median },
-  ];
-  $("#featureComparisons").innerHTML = groups.map(group => {
-    const yes = measured.filter(group.test);
-    const no = measured.filter(article => !group.test(article));
-    return `<section class="feature-pair"><h3>${esc(group.name)}</h3><div>${featureMetricCard(group.yes, yes, periodReady)}${featureMetricCard(group.no, no, periodReady)}</div></section>`;
-  }).join("");
+  return `<dl class="category-metrics"><div><dt>構成比</dt><dd>${share.toFixed(1)}%</dd></div><div><dt>スキ比</dt><dd>${likeRate.toFixed(1)}%</dd></div><div><dt>コメント比</dt><dd>${commentRate.toFixed(1)}%</dd></div><div><dt>記録ビュー／記事</dt><dd>${activity}</dd></div></dl>`;
 }
 
 function renderAgeMix(items, latest) {
@@ -192,29 +141,13 @@ function renderAgeMix(items, latest) {
   let cursor = 0;
   const segments = groups.map((group, index) => {
     const width = group.pv / Math.max(total, 1) * 100;
-    const segment = `<rect class="mix-${index}" x="${cursor}" y="0" width="${width}" height="12"><title>${esc(group.name)} ${fmt.format(group.pv)}PV（${width.toFixed(1)}%）</title></rect>`;
+    const segment = `<rect class="mix-${index}" x="${cursor}" y="0" width="${width}" height="12"><title>${esc(group.name)} ${fmt.format(group.pv)}従来ビュー（${width.toFixed(1)}%）</title></rect>`;
     cursor += width;
     return segment;
   }).join("");
   $("#ageMix").innerHTML = total
-    ? `<svg class="mixbar" viewBox="0 0 100 12" preserveAspectRatio="none" role="img" aria-label="前回取得からの増加PVを記事の公開後日数で分解">${segments}</svg>${groups.map((group, index) => `<p><i class="dot mix-${index}"></i><span>${group.name}</span><b>${fmt.format(group.pv)} PV</b><small>${(group.pv / total * 100).toFixed(1)}%</small></p>`).join("")}`
+    ? `<svg class="mixbar" viewBox="0 0 100 12" preserveAspectRatio="none" role="img" aria-label="前回取得からの従来ビュー増加を記事の公開後日数で分解">${segments}</svg>${groups.map((group, index) => `<p><i class="dot mix-${index}"></i><span>${group.name}</span><b>${fmt.format(group.pv)} 従来ビュー</b><small>${(group.pv / total * 100).toFixed(1)}%</small></p>`).join("")}`
     : empty("前回差を記録中", "2回分の記事履歴から内訳を表示します。");
-}
-
-function renderArticleMap(items) {
-  const mapItems = items.filter(article => article.pv > 0);
-  const maxPv = Math.max(...mapItems.map(article => article.pv), 1);
-  const maxRate = Math.max(...mapItems.map(article => (article.likes + article.comments) / article.pv), 0.01);
-  const points = mapItems.map(article => {
-    const rate = (article.likes + article.comments) / article.pv;
-    const x = Math.sqrt(article.pv / maxPv) * 92 + 3;
-    const y = 94 - rate / maxRate * 88;
-    const label = `${article.title}｜${article.pv} PV｜反応率 ${(rate * 100).toFixed(1)}%`;
-    return `<a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(label)}"><title>${esc(label)}</title><circle class="point" cx="${x}" cy="${y}" r="1.1"></circle></a>`;
-  }).join("");
-  $("#articleMap").innerHTML =
-    '<div class="axis-y">反応率 高</div><div class="axis-x">PV 高 →</div>' +
-    `<svg class="article-map-svg" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="記事ごとのPVと反応率の分布">${points}</svg>`;
 }
 
 function renderGrowthCurve(data, items, latest) {
@@ -249,12 +182,12 @@ function renderGrowthCurve(data, items, latest) {
     const dateStep = Math.max(1, Math.ceil(rows.length / 5));
     const dateIndexes = rows.map((_, index) => index).filter(index => index === 0 || index === rows.length - 1 || index % dateStep === 0);
     const xAxis = [...new Set(dateIndexes)].map(index => `<text class="curve-axis-label" x="${xAt(index)}" y="${height - 10}" text-anchor="middle">${esc(rows[index].date.slice(5).replace("-", "/"))}</text>`).join("");
-    const dots = rows.map((row, index) => `<circle class="curve-dot" cx="${xAt(index)}" cy="${yAt(row.pv)}" r="3"><title>${esc(row.date)}: ${fmt.format(row.pv)} PV</title></circle>`).join("");
+    const dots = rows.map((row, index) => `<circle class="curve-dot" cx="${xAt(index)}" cy="${yAt(row.pv)}" r="3"><title>${esc(row.date)}: ${fmt.format(row.pv)} 従来ビュー</title></circle>`).join("");
     $("#curveChart").innerHTML = rows.length > 1
-      ? `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="選択した記事の累計PV推移">${yAxis}<polyline points="${points}"/>${dots}${xAxis}</svg>`
+      ? `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="選択した記事の累計従来ビュー推移">${yAxis}<polyline points="${points}"/>${dots}${xAxis}</svg>`
       : empty("推移は記録中", "記事別履歴が2日分になると線で表示します。");
     $("#curveNote").textContent = rows.length
-      ? `${rows[0].date} → ${rows.at(-1).date} ／ ${fmt.format(rows[0].pv)} → ${fmt.format(rows.at(-1).pv)} PV`
+      ? `${rows[0].date} → ${rows.at(-1).date} ／ ${fmt.format(rows[0].pv)} → ${fmt.format(rows.at(-1).pv)} 従来ビュー`
       : "";
   };
 
@@ -267,7 +200,6 @@ function renderPhaseOne(data, activeItems, dormant, latest, historyDates, allIte
   renderPeriodComparison(data);
   renderDormant(dormant, historyDates);
   renderAgeMix(activeItems, latest);
-  renderArticleMap(activeItems);
   renderGrowthCurve(data, allItems, latest);
   renderLedger(allItems, dormant, historyDates);
 }
@@ -300,13 +232,13 @@ function renderCampaigns(data, articleItems) {
     const article = articleByKey.get(item.articleKey);
     const rate = article ? (Number(article.likes || 0) + Number(article.comments || 0)) / Math.max(Number(article.pv || 0), 1) * 100 : null;
     const metrics = !candidate && article
-      ? `<dl class="campaign-match-metrics"><div><dt>現在PV</dt><dd>${fmt.format(article.pv)}</dd></div><div><dt>直近7日PV</dt><dd>${article.d7?.pv == null ? "記録中" : signed(article.d7.pv)}</dd></div><div><dt>反応率</dt><dd>${rate.toFixed(1)}%</dd></div></dl>`
+      ? `<dl class="campaign-match-metrics"><div><dt>現在の従来ビュー</dt><dd>${fmt.format(article.pv)}</dd></div><div><dt>直近7日ビュー</dt><dd>${article.d7?.pv == null ? "記録中" : signed(article.d7.pv)}</dd></div><div><dt>反応比</dt><dd>${rate.toFixed(1)}%</dd></div></dl>`
       : "";
     const comparison = !candidate && article && window.NotePulseCampaignComparison
       ? window.NotePulseCampaignComparison.compare(article, articleItems, excludedComparisonKeys, observedDate)
       : null;
     const comparisonHtml = comparison?.ready
-      ? `<div class="campaign-peer-comparison"><b>同条件 ${comparison.peerCount}記事の中央値と比較</b><small>${esc(article.category)} ／ ${esc(comparison.band)}</small><dl><div><dt>直近7日PV</dt><dd>${signed(comparison.articlePv)} <em>中央値 ${fmt.format(comparison.pvMedian)}</em></dd></div><div><dt>反応率</dt><dd>${comparison.articleReaction.toFixed(1)}% <em>中央値 ${comparison.reactionMedian.toFixed(1)}%</em></dd></div></dl></div>`
+      ? `<div class="campaign-peer-comparison"><b>同条件 ${comparison.peerCount}記事の中央値と比較</b><small>${esc(article.category)} ／ ${esc(comparison.band)}</small><dl><div><dt>直近7日ビュー</dt><dd>${signed(comparison.articlePv)} <em>中央値 ${fmt.format(comparison.pvMedian)}</em></dd></div><div><dt>反応率</dt><dd>${comparison.articleReaction.toFixed(1)}% <em>中央値 ${comparison.reactionMedian.toFixed(1)}%</em></dd></div></dl></div>`
       : comparison
         ? `<div class="campaign-peer-comparison pending"><b>${esc(comparison.reason)}</b><small>${esc(article.category)} ／ ${esc(comparison.band)} ／ 同条件 ${comparison.peerCount}記事（3記事から表示）</small></div>`
         : "";
@@ -391,7 +323,7 @@ function renderTrendAlignment(data) {
   }
   $("#alignmentCheckedAt").textContent = `${alignment.periodStart.replaceAll("-", ".")} → ${alignment.periodEnd.replaceAll("-", ".")}`;
   const categories = alignment.categories || [];
-  $("#alignmentContent").innerHTML = `<div class="alignment-summary"><div><span>比較対象</span><strong>${fmt.format(alignment.comparisonArticleCount || 0)}</strong><small>記事</small></div><div><span>期間中の新記事</span><strong>${fmt.format(alignment.excludedNewArticleCount || 0)}</strong><small>同条件比較から除外</small></div></div><div class="alignment-list">${categories.map(item => `<article><h3>${esc(item.category)}</h3><dl><div><dt>外部テーマ一致</dt><dd>${fmt.format(item.matchedArticleCount)}記事 ／ ${signed(item.matchedPvChange14d)} PV</dd></div><div><dt>一致を観測せず</dt><dd>${fmt.format(item.noMatchArticleCount)}記事 ／ ${signed(item.noMatchPvChange14d)} PV</dd></div></dl></article>`).join("")}</div><p class="campaign-observation-note">${esc(alignment.interpretation)}</p>`;
+  $("#alignmentContent").innerHTML = `<div class="alignment-summary"><div><span>比較対象</span><strong>${fmt.format(alignment.comparisonArticleCount || 0)}</strong><small>記事</small></div><div><span>期間中の新記事</span><strong>${fmt.format(alignment.excludedNewArticleCount || 0)}</strong><small>同条件比較から除外</small></div></div><div class="alignment-list">${categories.map(item => `<article><h3>${esc(item.category)}</h3><dl><div><dt>外部テーマ一致</dt><dd>${fmt.format(item.matchedArticleCount)}記事 ／ ${signed(item.matchedPvChange14d)} 従来ビュー</dd></div><div><dt>一致を観測せず</dt><dd>${fmt.format(item.noMatchArticleCount)}記事 ／ ${signed(item.noMatchPvChange14d)} 従来ビュー</dd></div></dl></article>`).join("")}</div><p class="campaign-observation-note">${esc(alignment.interpretation)}</p>`;
 }
 
 function render(data) {
@@ -415,9 +347,7 @@ function render(data) {
   const dormantKeys = new Set(dormant.map(article => article.key));
   const activeItems = items.filter(article => !dormantKeys.has(article.key));
 
-  renderFairComparison(items, latest);
   renderCategories(items, dormantKeys);
-  renderFeatureComparisons(items);
   renderCampaigns(data, items);
   renderTrending(data);
   renderTrendAlignment(data);
@@ -429,7 +359,8 @@ function render(data) {
 
 function showLoadError() {
   $("#status").textContent = "● データを取得できません";
-  $("#trendNote").textContent = "しばらくしてから再読み込みしてください";
+  const trendNote = $("#trendNote");
+  if (trendNote) trendNote.textContent = "しばらくしてから再読み込みしてください";
   $("#dataState").textContent = "取得エラー";
 }
 

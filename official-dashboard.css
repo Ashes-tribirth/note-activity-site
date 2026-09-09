@@ -1,0 +1,21 @@
+.official-dashboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 18px 0;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+}
+.official-dashboard span { color: var(--muted); font-size: 11px; letter-spacing: .16em; }
+.official-dashboard h2 { margin: 4px 0 6px; font-size: 20px; }
+.official-dashboard p, .metric-transition p { margin: 0; color: var(--muted); line-height: 1.7; }
+.official-dashboard a { flex: none; padding: 12px 18px; border-radius: 10px; background: var(--blue); color: #fff; font-weight: 700; text-decoration: none; }
+.metric-transition { margin: 0 0 18px; }
+.metric-transition strong { display: block; margin-bottom: 6px; }
+@media (max-width: 640px) {
+  .official-dashboard { align-items: stretch; flex-direction: column; }
+  .official-dashboard a { text-align: center; }
+}

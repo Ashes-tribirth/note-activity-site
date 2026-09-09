@@ -166,8 +166,9 @@
     if (!state.data) return;
     const rows = filterRange(activityDeltas(state.data), state.activityRange);
     const target = $("#trendBars");
+    if (!target) return;
     target.innerHTML = rows.length
-      ? activityBarChart(rows, "pv", "PV増加", "pv") +
+      ? activityBarChart(rows, "pv", "従来ビュー増加", "pv") +
         activityBarChart(rows, "likes", "スキ増加", "likes") +
         activityBarChart(rows, "comments", "コメント増加", "comments")
       : '<div class="chart-empty">2回分の記録がそろうと増加量を表示します。</div>';
