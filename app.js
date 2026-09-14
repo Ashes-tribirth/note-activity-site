@@ -326,6 +326,33 @@ function renderTrendAlignment(data) {
   $("#alignmentContent").innerHTML = `<div class="alignment-summary"><div><span>比較対象</span><strong>${fmt.format(alignment.comparisonArticleCount || 0)}</strong><small>記事</small></div><div><span>期間中の新記事</span><strong>${fmt.format(alignment.excludedNewArticleCount || 0)}</strong><small>同条件比較から除外</small></div></div><div class="alignment-list">${categories.map(item => `<article><h3>${esc(item.category)}</h3><dl><div><dt>外部テーマ一致</dt><dd>${fmt.format(item.matchedArticleCount)}記事 ／ ${signed(item.matchedPvChange14d)} 従来ビュー</dd></div><div><dt>一致を観測せず</dt><dd>${fmt.format(item.noMatchArticleCount)}記事 ／ ${signed(item.noMatchPvChange14d)} 従来ビュー</dd></div></dl></article>`).join("")}</div><p class="campaign-observation-note">${esc(alignment.interpretation)}</p>`;
 }
 
+
+function renderFunnel(data) {
+  const funnel = data.funnel;
+  const panel = $("#funnelPanel");
+  if (!panel || !funnel?.articles?.length) return;
+  const byKey = new Map((data.articles || []).map(article => [article.key, article]));
+  const rows = funnel.articles.map(metric => ({ ...metric, article: byKey.get(metric.key) }))
+    .filter(item => item.article)
+    .sort((left, right) => Number(right.impressions || 0) - Number(left.impressions || 0));
+  const totals = rows.reduce((sum, item) => {
+    sum.impressions += Number(item.impressions || 0);
+    sum.pageviews += Number(item.pageviews || 0);
+    sum.likes += Number(item.likes || 0);
+    return sum;
+  }, { impressions: 0, pageviews: 0, likes: 0 });
+  const rate = (top, bottom) => bottom > 0 ? `${(top / bottom * 100).toFixed(1)}%` : "—";
+  $("#funnelDate").textContent = `${String(funnel.date || "").replaceAll("-", ".")} の実績`;
+  $("#funnelSummary").innerHTML = `
+    <div><span>インプレッション</span><strong>${fmt.format(totals.impressions)}</strong><small>note上で表示された回数</small></div>
+    <div><span>ページビュー</span><strong>${fmt.format(totals.pageviews)}</strong><small>記事を開いた回数</small></div>
+    <div><span>閲覧率</span><strong>${rate(totals.pageviews, totals.impressions)}</strong><small>PV ÷ インプレッション</small></div>
+    <div><span>スキ率</span><strong>${rate(totals.likes, totals.pageviews)}</strong><small>スキ ÷ PV</small></div>`;
+  $("#funnelBody").innerHTML = rows.slice(0, 12).map(item => `<tr><td><a href="${esc(item.article.url)}" target="_blank" rel="noopener noreferrer">${esc(item.article.title)}</a></td><td>${fmt.format(Number(item.impressions || 0))}</td><td>${fmt.format(Number(item.pageviews || 0))}</td><td>${rate(Number(item.pageviews || 0), Number(item.impressions || 0))}</td><td>${rate(Number(item.likes || 0), Number(item.pageviews || 0))}</td></tr>`).join("");
+  $("#funnelCoverage").textContent = `この日に動きがあった${fmt.format(rows.length)}記事を表示。0と未取得は混同しません。閲覧率・スキ率は期間内の実数から計算しています。`;
+  panel.hidden = false;
+}
+
 function render(data) {
   const summaries = data.summaries || [];
   const latest = summaries.at(-1);
@@ -338,6 +365,7 @@ function render(data) {
   const intervalLabel = intervalHours == null ? "前回取得から" : `前回取得から（${intervalHours.toFixed(1)}時間）`;
 
   renderHeaderAndTotals(data, latest, previous, intervalLabel);
+  renderFunnel(data);
 
   const { items, dates } = buildArticleItems(data);
   const canJudgeDormant = dates.length >= 2;
