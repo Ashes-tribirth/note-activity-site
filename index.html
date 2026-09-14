@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="./sky-compass-motif.css?v=20260822a">
 <link rel="stylesheet" href="./layout-fix.css?v=20260822a">
 <link rel="stylesheet" href="./official-dashboard.css?v=20260909a">
+<link rel="stylesheet" href="./funnel.css?v=20260914a">
 <script src="./period-integrity.js?v=20260820a" defer></script>
 <script src="./health-integrity.js?v=20260820a" defer></script>
 <script src="./campaign-comparison.js?v=20260821a" defer></script>
@@ -29,6 +30,7 @@
 <section class="official-dashboard" aria-labelledby="officialDashboardTitle"><div><span>OFFICIAL DASHBOARD</span><h2 id="officialDashboardTitle">現在の一次データはnote公式で確認</h2><p>インプレッション、ページビュー、流入元、記事別の現在値は公式ダッシュボードを使用します。</p></div><a href="https://note.com/sitesettings/stats" target="_blank" rel="noopener noreferrer">公式ダッシュボードを開く</a></section>
 <section class="metric-transition panel"><strong>指標切替のお知らせ</strong><p>2026年9月8日の公式刷新以前に保存した「ビュー」は、現在の「ページビュー」と定義が異なります。この画面では既存値を「従来ビュー」として保持し、新しいページビューと混在させません。</p></section>
 <section class="panel health-panel"><div class="title"><div><span>DATA RELIABILITY</span><h2>データの健全性</h2></div><strong id="healthBadge" class="health-badge">確認中</strong></div><div id="healthChecks" class="health-checks"></div></section>
+<section id="funnelPanel" class="panel funnel-panel" hidden><div class="title"><div><span>DAILY FUNNEL</span><h2>露出 → 閲覧 → 反応</h2></div><small id="funnelDate">—</small></div><div id="funnelSummary" class="funnel-summary"></div><div class="funnel-table-wrap"><table><thead><tr><th>記事</th><th>表示</th><th>PV</th><th>閲覧率</th><th>スキ率</th></tr></thead><tbody id="funnelBody"></tbody></table></div><p id="funnelCoverage" class="method"></p></section>
 <section id="changes" class="changes"></section>
 <section class="follow connection-insights">
   <div class="connection-head"><div><span>CONNECTION TREND</span><h2>つながりの推移</h2><small>増減を主役にして、累計値は補助情報として表示</small></div><small>毎朝自動記録</small></div>
