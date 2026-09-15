@@ -126,6 +126,11 @@ function renderHeaderAndTotals(data, latest, previous, intervalLabel) {
   $("#dataState").textContent = "最新データを表示中";
   $("#lastFetched").textContent = `${latest.collectedAt.replace("T", " ").slice(0, 16)} JST`;
 
+  const summaries = data.summaries || [];
+  const followers = data.followers || [];
+  const follow = followers.at(-1) || {};
+  const previousFollow = followers.at(-2) || follow;
+  const followerReady = followers.length >= 2 && Number.isFinite(Number(follow.followerCount)) && Number.isFinite(Number(previousFollow.followerCount));
   const stats = $("#stats");
   if (stats) stats.innerHTML =
     stat("LEGACY VIEWS", latest.totalPv, "従来ビュー累計", "pv") +
