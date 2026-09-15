@@ -1,0 +1,56 @@
+/* Decision-first layout: current official metrics lead; legacy records remain available on demand. */
+.record-strip a{margin-left:auto;color:var(--blue);font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap}
+.record-strip a:hover{text-decoration:underline}
+
+.health-panel{padding:0;overflow:hidden}
+.health-panel>summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;cursor:pointer;font-weight:700;list-style:none}
+.health-panel>summary::-webkit-details-marker{display:none}
+.health-panel>summary:before{content:"＋";color:var(--muted);font-size:18px}
+.health-panel[open]>summary:before{content:"−"}
+.health-panel>summary>span{margin-right:auto}
+.health-panel .health-checks{margin:0;padding:0 20px 20px}
+
+.funnel-panel{margin-top:18px}
+.funnel-panel h1{margin:0;font-size:clamp(25px,3vw,34px);line-height:1.3}
+.funnel-summary{margin-bottom:14px}
+.funnel-table-wrap{display:none}
+
+.article-ledger{margin-top:18px}
+.ledger-dormant{display:flex;align-items:baseline;gap:10px;margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#7180980a}
+.ledger-dormant b{font-size:14px}
+.ledger-dormant span{color:var(--muted);font-size:12px}
+.article-ledger th:nth-child(n+4),.article-ledger td:nth-child(n+4){font-variant-numeric:tabular-nums}
+
+.connection-insights{margin-top:18px}
+.connection-insights .connection-head{padding-bottom:12px}
+.connection-summary{margin-bottom:10px}
+.connection-visual{margin-top:10px}
+
+.legacy-archive{margin-top:18px;border:1px solid var(--line);border-radius:18px;background:#71809808}
+.legacy-archive>summary{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:18px 22px;cursor:pointer;list-style:none}
+.legacy-archive>summary::-webkit-details-marker{display:none}
+.legacy-archive>summary:before{content:"＋";grid-row:1/3;color:var(--muted);font-size:20px}
+.legacy-archive[open]>summary:before{content:"−"}
+.legacy-archive>summary span{color:var(--muted);font-size:12px;letter-spacing:.14em}
+.legacy-archive>summary b{grid-column:2;font-size:18px}
+.legacy-archive>summary small{grid-column:3;grid-row:1/3;max-width:390px;color:var(--muted);font-size:12px;text-align:right}
+.legacy-archive>.grid{margin:0 18px 18px}
+
+.external-observations{margin-top:28px}
+.data-status{padding:22px}
+
+@media(max-width:800px){
+  .record-strip{flex-wrap:wrap}
+  .record-strip a{width:100%;margin-left:0;padding-top:8px;border-top:1px solid var(--line)}
+  .health-panel .health-checks{grid-template-columns:1fr 1fr}
+  .legacy-archive>summary{grid-template-columns:auto 1fr}
+  .legacy-archive>summary small{grid-column:2;grid-row:auto;text-align:left}
+}
+
+@media(max-width:520px){
+  .health-panel .health-checks{grid-template-columns:1fr}
+  .funnel-summary{grid-template-columns:1fr 1fr}
+  .ledger-dormant{align-items:flex-start;flex-direction:column;gap:2px}
+  .legacy-archive>summary{padding:16px}
+  .legacy-archive>.grid{margin:0 8px 8px}
+}

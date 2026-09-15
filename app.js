@@ -10,7 +10,7 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({
 })[char]);
 const signed = value => `${value >= 0 ? "+" : ""}${fmt.format(value)}`;
 const days = (from, to) => Math.max(1, Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1);
-let ledgerSort = { key: "d1pv", dir: -1 };
+let ledgerSort = { key: "impressions", dir: -1 };
 
 function setTheme(dark, save = false) {
   document.body.classList.toggle("dark", dark);
@@ -114,15 +114,13 @@ function categoryShareBar(count, total, name) {
   return `<svg class="category-share" viewBox="0 0 100 5" preserveAspectRatio="none" role="img" aria-label="${esc(name)}は全${total}記事中${count}記事、構成比${share.toFixed(1)}%"><rect class="category-track" x="0" y="0" width="100" height="5"></rect><rect class="category-fill" x="0" y="0" width="${share}" height="5"><title>${esc(name)} ${count}記事／全${total}記事（${share.toFixed(1)}%）</title></rect></svg>`;
 }
 
-function categoryMetrics(row, totalCount, activityReady = true) {
-  const pv = Math.max(Number(row.pv) || 0, 0);
+function categoryMetrics(row, totalCount) {
   const count = Math.max(Number(row.count) || 0, 0);
   const share = count / Math.max(totalCount, 1) * 100;
-  const likeRate = Number(row.likes || 0) / Math.max(pv, 1) * 100;
-  const commentRate = Number(row.comments || 0) / Math.max(pv, 1) * 100;
-  const pvPerArticle = Number(row.d7 || 0) / Math.max(count, 1);
-  const activity = activityReady ? pvPerArticle.toFixed(1) : "記録中";
-  return `<dl class="category-metrics"><div><dt>構成比</dt><dd>${share.toFixed(1)}%</dd></div><div><dt>スキ比</dt><dd>${likeRate.toFixed(1)}%</dd></div><div><dt>コメント比</dt><dd>${commentRate.toFixed(1)}%</dd></div><div><dt>記録ビュー／記事</dt><dd>${activity}</dd></div></dl>`;
+  const viewRate = row.impressions > 0 ? row.pageviews / row.impressions * 100 : null;
+  const likeRate = row.pageviews > 0 ? row.likes / row.pageviews * 100 : null;
+  const rate = value => value == null ? "—" : `${value.toFixed(1)}%`;
+  return `<dl class="category-metrics"><div><dt>構成比</dt><dd>${share.toFixed(1)}%</dd></div><div><dt>表示</dt><dd>${row.observed ? fmt.format(row.impressions) : "—"}</dd></div><div><dt>閲覧率</dt><dd>${rate(viewRate)}</dd></div><div><dt>スキ率</dt><dd>${rate(likeRate)}</dd></div></dl>`;
 }
 
 function renderAgeMix(items, latest) {
@@ -331,10 +329,7 @@ function renderFunnel(data) {
   const funnel = data.funnel;
   const panel = $("#funnelPanel");
   if (!panel || !funnel?.articles?.length) return;
-  const byKey = new Map((data.articles || []).map(article => [article.key, article]));
-  const rows = funnel.articles.map(metric => ({ ...metric, article: byKey.get(metric.key) }))
-    .filter(item => item.article)
-    .sort((left, right) => Number(right.impressions || 0) - Number(left.impressions || 0));
+  const rows = funnel.articles;
   const totals = rows.reduce((sum, item) => {
     sum.impressions += Number(item.impressions || 0);
     sum.pageviews += Number(item.pageviews || 0);
@@ -348,8 +343,9 @@ function renderFunnel(data) {
     <div><span>ページビュー</span><strong>${fmt.format(totals.pageviews)}</strong><small>記事を開いた回数</small></div>
     <div><span>閲覧率</span><strong>${rate(totals.pageviews, totals.impressions)}</strong><small>PV ÷ インプレッション</small></div>
     <div><span>スキ率</span><strong>${rate(totals.likes, totals.pageviews)}</strong><small>スキ ÷ PV</small></div>`;
-  $("#funnelBody").innerHTML = rows.slice(0, 12).map(item => `<tr><td><a href="${esc(item.article.url)}" target="_blank" rel="noopener noreferrer">${esc(item.article.title)}</a></td><td>${fmt.format(Number(item.impressions || 0))}</td><td>${fmt.format(Number(item.pageviews || 0))}</td><td>${rate(Number(item.pageviews || 0), Number(item.impressions || 0))}</td><td>${rate(Number(item.likes || 0), Number(item.pageviews || 0))}</td></tr>`).join("");
-  $("#funnelCoverage").textContent = `この日に動きがあった${fmt.format(rows.length)}記事を表示。0と未取得は混同しません。閲覧率・スキ率は期間内の実数から計算しています。`;
+  $("#funnelCoverage").textContent = `公式応答に含まれた${fmt.format(rows.length)}記事を集計。記事別の内訳は下の判断表へ統合しています。0と未取得は混同しません。`;
+  const categoryPeriod = $("#categoryPeriod");
+  if (categoryPeriod) categoryPeriod.textContent = `${String(funnel.date || "").replaceAll("-", ".")} の実績`;
   panel.hidden = false;
 }
 

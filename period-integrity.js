@@ -63,6 +63,7 @@ function articlePeriodContext(data) {
 
 function buildArticleItems(data) {
   const history = data.articleHistory || [];
+  const funnelByKey = new Map((data.funnel?.articles || []).map(row => [row.key, row]));
   const context = articlePeriodContext(data);
   periodState.mode = context.mode;
   periodState.baselineDate = context.baselineDate;
@@ -81,11 +82,18 @@ function buildArticleItems(data) {
     const key = article.key || String(article.url || "").split("/").pop();
     const previous = previousDate ? byDate.get(previousDate)?.get(key) : null;
     const baseline = context.baselineDate ? byDate.get(context.baselineDate)?.get(key) : null;
+    const dailyRow = funnelByKey.get(key);
     const ready = ["exact", "provisional"].includes(context.mode);
     return {
       ...article,
       key,
       category: categoryOf(article),
+      daily: dailyRow ? {
+        impressions: Number(dailyRow.impressions || 0),
+        pageviews: Number(dailyRow.pageviews || 0),
+        likes: Number(dailyRow.likes || 0),
+        comments: Number(dailyRow.comments || 0),
+      } : null,
       d1: {
         pv: article.pv - Number(previous?.pv || 0),
         likes: article.likes - Number(previous?.likes || 0),
@@ -103,29 +111,20 @@ function buildArticleItems(data) {
 
 function renderHeaderAndTotals(data, latest, previous, intervalLabel) {
   const date = new Date(latest.collectedAt);
-  $("#recordDate").textContent = `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
-  $("#recordTime").textContent = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")} JST`;
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date).filter(part => part.type !== "literal").map(part => [part.type, part.value]));
+  $("#recordDate").textContent = `${parts.month}.${parts.day}`;
+  $("#recordTime").textContent = `${parts.hour}:${parts.minute} JST`;
   $("#recordCount").textContent = `対象 ${latest.articleCount}記事`;
   $("#status").textContent = "● 実データ連携中";
   $("#dataState").textContent = "最新データを表示中";
   $("#lastFetched").textContent = `${latest.collectedAt.replace("T", " ").slice(0, 16)} JST`;
-
-  const summaries = data.summaries || [];
-  const week = continuousWindow(summaries, 7);
-  const month = continuousWindow(summaries, 30);
-  const followers = data.followers || [];
-  const follow = followers.at(-1) || {};
-  const previousFollow = followers.at(-2) || follow;
-  const followerReady = followers.length >= 2 && Number.isFinite(Number(follow.followerCount)) && Number.isFinite(Number(previousFollow.followerCount));
-  const previousDelta = summaries.length >= 2 ? deltaBetween(data, rowDate(previous), rowDate(latest), data.articles || []) : null;
-  const weekDelta = week ? deltaBetween(data, rowDate(week.baseline), rowDate(week.latest), data.articles || []) : null;
-  const monthDelta = month ? deltaBetween(data, rowDate(month.baseline), rowDate(month.latest), data.articles || []) : null;
-
-  $("#changes").innerHTML =
-    change(intervalLabel, previousDelta?.pv || 0, previousDelta ? `スキ ${signed(previousDelta.likes)} ／ コメント ${signed(previousDelta.comments)}` : "", Boolean(previousDelta), "従来ビュー") +
-    change("7日間", weekDelta?.pv || 0, weekDelta ? `スキ ${signed(weekDelta.likes)} ／ コメント ${signed(weekDelta.comments)}` : "", Boolean(weekDelta), "従来ビュー") +
-    change("30日間", monthDelta?.pv || 0, monthDelta ? `スキ ${signed(monthDelta.likes)} ／ コメント ${signed(monthDelta.comments)}` : "", Boolean(monthDelta), "従来ビュー") +
-    change("フォロワー前回比", followerReady ? Number(follow.followerCount) - Number(previousFollow.followerCount) : 0, `現在 ${fmt.format(Number(follow.followerCount) || 0)}人`, followerReady, "人");
 
   const stats = $("#stats");
   if (stats) stats.innerHTML =
@@ -175,12 +174,6 @@ function renderDormant(dormant) {
     $("#dormantCount").textContent = `${dormant.length}記事`;
     $("#dormantBasis").textContent = "直近7日間、従来ビュー・スキ・コメントがすべて変わっていない記事です。";
   }
-  const pv = dormant.reduce((sum, article) => sum + article.pv, 0);
-  const likes = dormant.reduce((sum, article) => sum + article.likes, 0);
-  const waiting = ["waiting", "gap"].includes(mode);
-  $("#dormantSummary").innerHTML = dormant.length
-    ? `<div><span>対象</span><b>${dormant.length}記事</b></div><div><span>累計従来ビュー</span><b>${fmt.format(pv)}</b></div><div><span>累計スキ</span><b>${fmt.format(likes)}</b></div>`
-    : empty(waiting ? "判定待ち" : "該当なし", mode === "gap" ? "欠けた日付があるため推測せず判定を保留しています。" : mode === "waiting" ? "次回記録後から動きの有無を判定します。" : "動きのない記事はありません。");
 }
 
 function renderLedger(allItems, dormant) {
@@ -196,19 +189,35 @@ function renderLedger(allItems, dormant) {
       const isDormant = dormantKeys.has(article.key);
       const statusValue = ["gap", "waiting"].includes(mode) ? "pending" : isDormant ? "dormant" : "active";
       const statusLabel = mode === "exact" ? (isDormant ? "7日間動きなし" : "動きあり") : mode === "provisional" ? `暫定・${isDormant ? "動きなし" : "動きあり"}` : "記録中";
-      return { ...article, d1pv: article.d1.pv, d7pv: article.d7.pv, rate: (article.likes + article.comments) / Math.max(1, article.pv), status: statusValue, statusLabel };
+      const impressions = article.daily?.impressions ?? null;
+      const pageviews = article.daily?.pageviews ?? null;
+      const dailyLikes = article.daily?.likes ?? null;
+      return {
+        ...article,
+        impressions,
+        pageviews,
+        dailyLikes,
+        viewRate: impressions > 0 && pageviews !== null ? pageviews / impressions : null,
+        likeRate: pageviews > 0 && dailyLikes !== null ? dailyLikes / pageviews : null,
+        d7pv: article.d7.pv,
+        status: statusValue,
+        statusLabel,
+      };
     }).filter(article =>
       (!query || article.title.toLowerCase().includes(query)) &&
       (!category || article.category === category) &&
       (!status || article.status === status)
     ).sort((a, b) => {
-      const x = a[ledgerSort.key] ?? "";
-      const y = b[ledgerSort.key] ?? "";
+      const x = a[ledgerSort.key];
+      const y = b[ledgerSort.key];
+      if (x == null && y != null) return 1;
+      if (x != null && y == null) return -1;
+      if (x == null && y == null) return 0;
       const result = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "ja");
       return result * ledgerSort.dir;
     });
     $("#ledgerBody").innerHTML = rows.map(article =>
-      `<tr><td><a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a></td><td>${article.category ? esc(article.category) : "—"}</td><td>${article.publishedAt ? article.publishedAt.slice(0, 10) : "—"}</td><td>${fmt.format(article.pv)}</td><td>${fmt.format(article.likes)}</td><td>${fmt.format(article.comments)}</td><td>${signed(article.d1pv)}</td><td>${article.d7pv == null ? "記録中" : signed(article.d7pv)}</td><td>${(article.rate * 100).toFixed(1)}%</td><td><span class="state ${article.status}">${article.statusLabel}</span></td></tr>`
+      `<tr><td><a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a></td><td>${article.category ? esc(article.category) : "—"}</td><td>${article.publishedAt ? article.publishedAt.slice(0, 10) : "—"}</td><td>${article.impressions == null ? "—" : fmt.format(article.impressions)}</td><td>${article.pageviews == null ? "—" : fmt.format(article.pageviews)}</td><td>${article.viewRate == null ? "—" : `${(article.viewRate * 100).toFixed(1)}%`}</td><td>${article.dailyLikes == null ? "—" : fmt.format(article.dailyLikes)}</td><td>${article.likeRate == null ? "—" : `${(article.likeRate * 100).toFixed(1)}%`}</td><td>${article.d7pv == null ? "記録中" : signed(article.d7pv)}</td><td><span class="state ${article.status}">${article.statusLabel}</span></td></tr>`
     ).join("");
   };
   $("#ledgerSearch").oninput = draw;
@@ -226,25 +235,22 @@ function renderLedger(allItems, dormant) {
 }
 
 function renderCategories(items, dormantKeys) {
-  const canJudge = !["gap", "waiting"].includes(periodState.mode);
   const order = ["音楽・曲", "エッセイ・日常", "note・ツール", "孫子・思考", "ゲーム・趣味", "その他"];
   const categories = new Map();
   items.filter(article => order.includes(article.category)).forEach(article => {
-    const active = !dormantKeys.has(article.key);
-    const entry = categories.get(article.category) || { name: article.category, count: 0, active: 0, pv: 0, likes: 0, comments: 0, d7: 0 };
+    const entry = categories.get(article.category) || { name: article.category, count: 0, observed: 0, impressions: 0, pageviews: 0, likes: 0 };
     entry.count += 1;
-    entry.pv += article.pv;
-    entry.likes += article.likes;
-    entry.comments += article.comments;
-    if (canJudge && active) {
-      entry.active += 1;
-      entry.d7 += article.d7.pv;
+    if (article.daily) {
+      entry.observed += 1;
+      entry.impressions += article.daily.impressions;
+      entry.pageviews += article.daily.pageviews;
+      entry.likes += article.daily.likes;
     }
     categories.set(article.category, entry);
   });
   const total = items.filter(article => order.includes(article.category)).length;
-  const rows = order.map(name => categories.get(name) || { name, count: 0, active: 0, pv: 0, likes: 0, comments: 0, d7: 0 });
+  const rows = order.map(name => categories.get(name) || { name, count: 0, observed: 0, impressions: 0, pageviews: 0, likes: 0 });
   $("#categories").innerHTML = rows.map(row =>
-    `<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／動きあり ${canJudge ? row.active : "判定中"}</span></p>${categoryShareBar(row.count, total, row.name)}${categoryMetrics(row, total, canJudge)}</div>`
+    `<div><p><b>${esc(row.name)}</b><span>全${row.count}記事／公式応答 ${row.observed}記事</span></p>${categoryShareBar(row.count, total, row.name)}${categoryMetrics(row, total)}</div>`
   ).join("");
 }

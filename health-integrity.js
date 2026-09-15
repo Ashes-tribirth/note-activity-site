@@ -26,13 +26,13 @@ function collectionTimeStatus(collectedAt) {
     return { ok: false, text: "取得時刻を確認できません" };
   }
   const minutes = hour * 60 + minute;
-  const withinRange = minutes >= 5 * 60 + 30 && minutes <= 9 * 60;
+  const withinRange = minutes >= 3 * 60 + 45 && minutes <= 7 * 60;
   const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
   return {
     ok: withinRange,
     text: withinRange
-      ? `${time} JST（通常範囲 05:30〜09:00）`
-      : `${time} JST（通常範囲 05:30〜09:00 から外れています）`,
+      ? `${time} JST（4:00実行の通常範囲）`
+      : `${time} JST（4:00実行の通常範囲 03:45〜07:00 から外れています）`,
   };
 }
 
