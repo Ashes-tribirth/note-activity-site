@@ -35,6 +35,9 @@ assert(!source["index.html"].includes('id="followerTotalChart"'), "判断価値�
 assert(source["period-integrity.js"].includes("impressions: Number(dailyRow.impressions || 0)"), "記事判断表へ日次インプレッションが統合されていません");
 assert(source["period-integrity.js"].includes('article.impressions == null ? "—"'), "未取得と0を区別していません");
 assert(source["period-integrity.js"].includes('timeZone: "Asia/Tokyo"'), "取得時刻が閲覧環境のタイムゾーンに依存しています");
+for (const asset of ["app.js", "period-integrity.js", "health-integrity.js"]) {
+  assert(source["index.html"].includes(`${asset}?v=20260915a`), `${asset}のキャッシュ更新番号が古いままです`);
+}
 assert(csp.includes("frame-src 'none'"), "埋め込み不可の公式画面を読み込まないCSPになっていません");
 assert(!source["index.html"].includes('id="articleMap"'), "旧ビューをPVとみなす記事分布が残っています");
 assert(!source["index.html"].includes('id="featureComparisons"'), "分析価値の低い特徴別比較が残っています");
