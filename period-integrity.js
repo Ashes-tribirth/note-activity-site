@@ -123,7 +123,6 @@ function renderHeaderAndTotals(data, latest, previous, intervalLabel) {
   $("#recordTime").textContent = `${parts.hour}:${parts.minute} JST`;
   $("#recordCount").textContent = `対象 ${latest.articleCount}記事`;
   $("#status").textContent = "● 実データ連携中";
-  $("#dataState").textContent = "最新データを表示中";
   $("#lastFetched").textContent = `${latest.collectedAt.replace("T", " ").slice(0, 16)} JST`;
 
   const summaries = data.summaries || [];

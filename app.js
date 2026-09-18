@@ -494,7 +494,8 @@ function showLoadError() {
   $("#status").textContent = "● データを取得できません";
   const trendNote = $("#trendNote");
   if (trendNote) trendNote.textContent = "しばらくしてから再読み込みしてください";
-  $("#dataState").textContent = "取得エラー";
+  $("#healthBadge").textContent = "取得エラー";
+  $("#healthChecks").innerHTML = empty("データを表示できません", "通信または画面処理でエラーが発生しました。再読み込みしてください。");
 }
 
 initTheme();

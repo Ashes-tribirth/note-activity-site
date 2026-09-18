@@ -24,3 +24,5 @@ jobs:
           node --check health-integrity.js
       - name: Audit dashboard integrity
         run: node tests/audit-dashboard.mjs
+      - name: Test rendering and error handling
+        run: node --test tests/*.test.*
