@@ -16,64 +16,28 @@
 <link rel="stylesheet" href="./layout-fix.css?v=20260822a">
 <link rel="stylesheet" href="./official-dashboard.css?v=20260909a">
 <link rel="stylesheet" href="./funnel.css?v=20260914a">
-<link rel="stylesheet" href="./optimization.css?v=20260915a">
-<script src="./period-integrity.js?v=20260915b" defer></script>
+<link rel="stylesheet" href="./optimization.css?v=20260918a">
+<script src="./period-integrity.js?v=20260918a" defer></script>
 <script src="./health-integrity.js?v=20260915a" defer></script>
 <script src="./campaign-comparison.js?v=20260821a" defer></script>
-<script src="./app.js?v=20260915a" defer></script>
-<script src="./charts.js?v=20260816e" defer></script>
-<script src="./connection-insights.js?v=20260819a" defer></script>
+<script src="./app.js?v=20260918a" defer></script>
 </head>
 <body>
 <main>
 <header><a class="brand" href="./"><b><img class="sky-light" src="https://raw.githubusercontent.com/Ashes-tribirth/note-tools-site/main/favi_sky_Compass_light.png" alt=""><img class="sky-dark" src="https://raw.githubusercontent.com/Ashes-tribirth/note-tools-site/main/favi_sky_Compass_dark.png" alt=""></b><span><strong>note Pulse</strong><small>ACTIVITY OBSERVATORY</small></span></a><div><span id="status" class="status">● 接続確認中</span><button id="theme" type="button" aria-label="ダークモードに切り替える" aria-pressed="false">☾</button></div></header>
 <section class="record-strip"><div><span>LAST RECORD</span><strong id="recordDate">--.--</strong><small id="recordTime">--:-- JST</small></div><p id="recordCount">対象 —記事</p><small>保存した実数のみで集計</small><a href="https://note.com/sitesettings/stats" target="_blank" rel="noopener noreferrer">公式ダッシュボード ↗</a></section>
 <details class="panel health-panel"><summary><span>データの健全性</span><strong id="healthBadge" class="health-badge">確認中</strong></summary><div id="healthChecks" class="health-checks"></div></details>
-<section id="funnelPanel" class="panel funnel-panel" hidden><div class="title"><div><span>DAILY FUNNEL</span><h1>露出 → 閲覧 → 反応</h1></div><small id="funnelDate">—</small></div><div id="funnelSummary" class="funnel-summary"></div><p id="funnelCoverage" class="method"></p></section>
-<section class="panel article-ledger"><div class="title"><div><span>ARTICLE DECISIONS</span><h2>記事別の判断表</h2></div><small>列見出しで並べ替え</small></div><div class="ledger-notes" aria-label="分析表の項目説明"><div><b>閲覧率</b><span>PV ÷ インプレッション</span></div><div><b>スキ率</b><span>スキ ÷ PV</span></div><div><b>7日従来ビュー</b><span>刷新前から継続している保存値の差分</span></div><div><b>—</b><span>0ではなく、その日の公式応答に含まれない項目</span></div></div><div class="ledger-dormant"><b id="dormantCount">判定中</b><span id="dormantBasis">直近7日の動きを確認しています。</span></div><div class="ledger-tools"><input id="ledgerSearch" placeholder="記事名を検索" aria-label="分析表の記事名を検索"><select id="categoryFilter" aria-label="分類で絞り込む"><option value="">すべての分類</option></select><select id="statusFilter" aria-label="状態で絞り込む"><option value="">すべての状態</option><option value="active">動きあり</option><option value="dormant">7日間動きなし</option></select></div><div class="table-wrap"><table><thead><tr><th data-sort="title">記事</th><th data-sort="category">分類</th><th data-sort="publishedAt">公開日</th><th data-sort="impressions">表示</th><th data-sort="pageviews">PV</th><th data-sort="viewRate">閲覧率</th><th data-sort="dailyLikes">スキ</th><th data-sort="likeRate">スキ率</th><th data-sort="d7pv">7日従来ビュー</th><th data-sort="status">状態</th></tr></thead><tbody id="ledgerBody"></tbody></table></div></section>
-<section class="panel"><div class="title"><div><span>CONTENT TYPES</span><h2>記事タイプ別の比較</h2></div><small id="categoryPeriod">最新の公式日次データ</small></div><div id="categories" class="categories"></div><p class="method">公式応答に含まれた記事だけで、表示→PV→スキを分類別に合算します。未取得は0として扱いません。</p></section>
-<section class="follow connection-insights">
-  <div class="connection-head"><div><span>CONNECTION TREND</span><h2>つながりの推移</h2><small>増減を主役にして、累計値は補助情報として表示</small></div><small>毎朝自動記録</small></div>
-  <div class="connection-summary">
-    <div class="followers-card"><span>FOLLOWERS</span><strong id="followers">—</strong><small>フォロワー</small><div class="metric-diff">前回取得から <b id="followDiff">記録中</b></div></div>
-    <div class="following-card"><span>FOLLOWING</span><strong id="following">—</strong><small>フォロー中</small><div class="metric-diff">前回取得から <b id="followingDiff">記録中</b></div></div>
-  </div>
-  <div class="connection-visual"><div class="connection-visual-head"><div><h3>期間比較</h3><small>必要な履歴が揃った期間だけ数値化</small></div></div><div id="followerPeriodCompare" class="connection-periods"></div></div>
-</section>
-<details class="legacy-archive"><summary><span>PAST RECORDS</span><b>従来ビューの過去分析</b><small>2026年9月8日以前からの保存値。現在のPVとは混在させません</small></summary><div class="grid analysis-grid"><article class="panel"><div class="title"><div><span>PERIOD COMPARISON</span><h2>同じ長さの期間で比較</h2></div><small>直近 vs その前</small></div><div id="periodCompare" class="period-compare"></div></article><article class="panel"><div class="title"><div><span>LEGACY VIEW COMPOSITION</span><h2>伸びを記事年齢で分解</h2></div><small>前回取得からの増加</small></div><div id="ageMix" class="age-mix"></div></article></div><section class="grid analysis-grid"><article class="panel"><div class="title"><div><span>GROWTH CURVE</span><h2>記事ごとの従来ビュー推移</h2></div></div><select id="curveSelect" aria-label="推移を表示する記事"></select><div id="curveChart" class="curve-chart"></div><p id="curveNote" class="method"></p></article></section></details>
+<section class="panel benchmark-panel"><div class="title"><div><span>ARTICLE BENCHMARK</span><h1>記事の実力を比べる</h1></div><small id="benchmarkPeriod">記録中</small></div><div id="benchmarkSummary" class="benchmark-summary"></div><p class="method">公開日・分類が同じ条件の記事と比べます。7日間の伸びと反応率は、公式ダッシュボードでは横断比較できない保存値です。</p></section>
+<section class="panel article-ledger"><div class="title"><div><span>ARTICLE DECISIONS</span><h2>記事別の判断表</h2></div><small>列見出しで並べ替え</small></div><div class="ledger-notes" aria-label="分析表の項目説明"><div><b>7日伸び</b><span>直近7日間の保存ビュー増加</span></div><div><b>同条件中央値</b><span>同じ分類・公開後日数帯の中央値</span></div><div><b>反応率</b><span>（スキ＋コメント）÷ 保存ビュー</span></div><div><b>比較対象</b><span>3記事以上で客観比較を表示</span></div></div><div class="ledger-tools"><input id="ledgerSearch" placeholder="記事名を検索" aria-label="分析表の記事名を検索"><select id="categoryFilter" aria-label="分類で絞り込む"><option value="">すべての分類</option></select></div><div class="table-wrap"><table><thead><tr><th data-sort="title">記事</th><th data-sort="category">分類</th><th data-sort="ageLabel">公開後</th><th data-sort="d7pv">7日伸び</th><th data-sort="pvMedian">同条件中央値</th><th data-sort="pvDelta">平均との差</th><th data-sort="reactionRate">反応率</th><th data-sort="reactionMedian">同条件中央値</th><th data-sort="reactionDelta">平均との差</th><th data-sort="peerCount">比較対象</th></tr></thead><tbody id="ledgerBody"></tbody></table></div></section>
 <section class="external-observations" aria-labelledby="externalObservationsTitle">
   <div class="external-observations-head"><div><span>PHASE 2</span><h2 id="externalObservationsTitle">note外部動向</h2></div><p>自記事の実績を確認した後に見る補助情報</p></div>
   <section class="panel campaign-panel">
     <div class="title"><div><span>OFFICIAL CAMPAIGNS</span><h2>公式企画との照合</h2></div><small id="campaignCheckedAt">確認中</small></div>
-    <div class="campaign-summary" aria-label="公式企画の照合状況">
-      <div><span>募集中</span><strong id="openCampaignCount">—</strong><small>公式企画</small></div>
-      <div><span>参加確認</span><strong id="confirmedMatchCount">—</strong><small>記事</small></div>
-      <div><span>要確認</span><strong id="candidateMatchCount">—</strong><small>候補</small></div>
-    </div>
     <div class="campaign-block"><div class="campaign-heading"><div><h3>現在募集中の企画</h3><small>締切が近い順</small></div></div><div id="openCampaignList" class="campaign-list"></div></div>
-    <div class="campaign-columns">
-      <div class="campaign-block"><div class="campaign-heading"><div><h3>参加を確認できた記事</h3><small>現在値・直近7日・同条件比較</small></div></div><div id="confirmedCampaignMatches" class="campaign-match-list"></div><p class="campaign-observation-note">比較対象は、同じ分類・同じ公開後日数帯のうち、企画参加の確定記事と要確認候補を除いた記事です。3記事以上ある場合に中央値を表示します。差は観測結果であり、企画参加の効果を示すものではありません。</p></div>
-      <div class="campaign-block"><div class="campaign-heading"><div><h3>要確認の候補</h3><small>ハッシュタグは一致、募集期間は未確認</small></div></div><div id="candidateCampaignMatches" class="campaign-match-list"></div></div>
-    </div>
     <p id="campaignCoverage" class="method">企画データを読み込んでいます。</p>
   </section>
-  <section class="panel trending-panel">
-    <div class="title"><div><span>PUBLIC TRENDING TOPICS</span><h2>note公開画面の急上昇</h2></div><small id="trendingCheckedAt">確認中</small></div>
-    <div class="trending-summary" aria-label="急上昇ワードの観測状況">
-      <div><span>本日の観測</span><strong id="trendingTopicCount">—</strong><small>語句</small></div>
-      <div><span>公式企画一致</span><strong id="trendingCampaignMatchCount">—</strong><small>語句</small></div>
-      <div><span>自記事一致</span><strong id="trendingOwnMatchCount">—</strong><small>語句</small></div>
-    </div>
-    <div id="trendingTopicList" class="trending-topic-list"></div>
-    <p id="trendingCoverage" class="method">急上昇データを読み込んでいます。</p>
-    <p class="campaign-observation-note">新出＝今回初めて観測、連続＝2日以上続けて観測、再浮上＝直前はなく過去7日内に再び観測。noteの公開画面で「急上昇」として確認した語句であり、集計方法や対象範囲は公開されていないため、note全体の投稿増加順位とは断定しません。</p>
-  </section>
-  <section class="panel alignment-panel">
-    <div class="title"><div><span>EXTERNAL THEME ALIGNMENT</span><h2>外部テーマとの関係</h2></div><small id="alignmentCheckedAt">記録中</small></div>
-    <div id="alignmentContent"></div>
-  </section>
 </section>
-<section class="data-status"><div><span>DATA STATUS</span><h2>この画面の数字について</h2></div><ul><li><b>最終取得</b><span id="lastFetched">—</span></li><li><b>更新頻度</b>毎朝4:00ごろ</li><li><b>記録状態</b><span id="dataState">接続確認中</span></li><li><b>比較方法</b>累計値の差から期間内の増加を算出</li></ul><p>日数が足りない比較は、推測値を出さず「記録中」と表示します。</p></section>
+<section class="data-status"><p><b>データについて：</b><span id="lastFetched">—</span>取得。更新は毎朝4:00ごろ。比較に必要な履歴が足りない記事は「比較対象不足」と表示します。</p></section>
 <footer><b>note Pulse</b><small>Data since 2026.08.13</small></footer>
 </main>
 </body>

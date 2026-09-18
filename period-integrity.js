@@ -138,9 +138,12 @@ function renderHeaderAndTotals(data, latest, previous, intervalLabel) {
     stat("COMMENTS", latest.totalComments, `平均 ${(latest.totalComments / latest.articleCount).toFixed(1)} / 記事`, "comments") +
     stat("ARTICLES", latest.articleCount, "記録対象", "articles");
 
-  $("#following").textContent = follow.followingCount == null ? "—" : fmt.format(follow.followingCount);
-  $("#followers").textContent = follow.followerCount == null ? "—" : fmt.format(follow.followerCount);
-  $("#followDiff").textContent = followerReady ? signed(Number(follow.followerCount) - Number(previousFollow.followerCount)) : "記録中";
+  const followingElement = $("#following");
+  const followersElement = $("#followers");
+  const followDiff = $("#followDiff");
+  if (followingElement) followingElement.textContent = follow.followingCount == null ? "—" : fmt.format(follow.followingCount);
+  if (followersElement) followersElement.textContent = follow.followerCount == null ? "—" : fmt.format(follow.followerCount);
+  if (followDiff) followDiff.textContent = followerReady ? signed(Number(follow.followerCount) - Number(previousFollow.followerCount)) : "記録中";
   const daysLabel = $("#days");
   if (daysLabel) daysLabel.textContent = `記録 ${summaries.length}日目`;
 }
@@ -181,37 +184,32 @@ function renderDormant(dormant) {
   }
 }
 
-function renderLedger(allItems, dormant) {
-  const dormantKeys = new Set(dormant.map(article => article.key));
+function renderLedger(allItems, observedDate) {
+  const comparison = window.NotePulseCampaignComparison;
   const categories = [...new Set(allItems.map(article => article.category).filter(Boolean))].sort();
-  const mode = periodState.mode;
   $("#categoryFilter").innerHTML = '<option value="">すべての分類</option>' + categories.map(category => `<option>${esc(category)}</option>`).join("");
   const draw = () => {
     const query = $("#ledgerSearch").value.toLowerCase();
     const category = $("#categoryFilter").value;
-    const status = $("#statusFilter").value;
     const rows = allItems.map(article => {
-      const isDormant = dormantKeys.has(article.key);
-      const statusValue = ["gap", "waiting"].includes(mode) ? "pending" : isDormant ? "dormant" : "active";
-      const statusLabel = mode === "exact" ? (isDormant ? "7日間動きなし" : "動きあり") : mode === "provisional" ? `暫定・${isDormant ? "動きなし" : "動きあり"}` : "記録中";
-      const impressions = article.daily?.impressions ?? null;
-      const pageviews = article.daily?.pageviews ?? null;
-      const dailyLikes = article.daily?.likes ?? null;
+      const result = comparison?.compare(article, allItems, new Set(), observedDate);
+      const ageBand = comparison?.ageBand(article.publishedAt, observedDate);
+      const reactionRate = comparison?.reactionRate(article);
       return {
         ...article,
-        impressions,
-        pageviews,
-        dailyLikes,
-        viewRate: impressions > 0 && pageviews !== null ? pageviews / impressions : null,
-        likeRate: pageviews > 0 && dailyLikes !== null ? dailyLikes / pageviews : null,
+        ageLabel: ageBand?.label || "公開日不明",
         d7pv: article.d7.pv,
-        status: statusValue,
-        statusLabel,
+        pvMedian: result?.ready ? result.pvMedian : null,
+        pvDelta: result?.ready ? result.articlePv - result.pvMedian : null,
+        reactionRate: result?.ready ? reactionRate : null,
+        reactionMedian: result?.ready ? result.reactionMedian : null,
+        reactionDelta: result?.ready ? reactionRate - result.reactionMedian : null,
+        peerCount: result?.ready ? result.peerCount : null,
+        comparisonNote: result?.reason || "比較対象不足",
       };
     }).filter(article =>
       (!query || article.title.toLowerCase().includes(query)) &&
-      (!category || article.category === category) &&
-      (!status || article.status === status)
+      (!category || article.category === category)
     ).sort((a, b) => {
       const x = a[ledgerSort.key];
       const y = b[ledgerSort.key];
@@ -222,12 +220,11 @@ function renderLedger(allItems, dormant) {
       return result * ledgerSort.dir;
     });
     $("#ledgerBody").innerHTML = rows.map(article =>
-      `<tr><td><a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a></td><td>${article.category ? esc(article.category) : "—"}</td><td>${article.publishedAt ? article.publishedAt.slice(0, 10) : "—"}</td><td>${article.impressions == null ? "—" : fmt.format(article.impressions)}</td><td>${article.pageviews == null ? "—" : fmt.format(article.pageviews)}</td><td>${article.viewRate == null ? "—" : `${(article.viewRate * 100).toFixed(1)}%`}</td><td>${article.dailyLikes == null ? "—" : fmt.format(article.dailyLikes)}</td><td>${article.likeRate == null ? "—" : `${(article.likeRate * 100).toFixed(1)}%`}</td><td>${article.d7pv == null ? "記録中" : signed(article.d7pv)}</td><td><span class="state ${article.status}">${article.statusLabel}</span></td></tr>`
+      `<tr><td><a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">${esc(article.title)}</a></td><td>${article.category ? esc(article.category) : "—"}</td><td>${esc(article.ageLabel)}</td><td>${article.d7pv == null ? "記録中" : signed(article.d7pv)}</td><td>${article.pvMedian == null ? "—" : fmt.format(Math.round(article.pvMedian))}</td><td>${article.pvDelta == null ? "—" : signed(Math.round(article.pvDelta))}</td><td>${article.reactionRate == null ? "—" : `${article.reactionRate.toFixed(1)}%`}</td><td>${article.reactionMedian == null ? "—" : `${article.reactionMedian.toFixed(1)}%`}</td><td>${article.reactionDelta == null ? "—" : `${article.reactionDelta >= 0 ? "+" : ""}${article.reactionDelta.toFixed(1)}pt`}</td><td>${article.peerCount == null ? `<span class="state pending">${esc(article.comparisonNote)}</span>` : `${article.peerCount}記事`}</td></tr>`
     ).join("");
   };
   $("#ledgerSearch").oninput = draw;
   $("#categoryFilter").onchange = draw;
-  $("#statusFilter").onchange = draw;
   document.querySelectorAll("[data-sort]").forEach(header => {
     header.onclick = () => {
       const key = header.dataset.sort;

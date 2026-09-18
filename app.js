@@ -10,7 +10,7 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({
 })[char]);
 const signed = value => `${value >= 0 ? "+" : ""}${fmt.format(value)}`;
 const days = (from, to) => Math.max(1, Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1);
-let ledgerSort = { key: "impressions", dir: -1 };
+let ledgerSort = { key: "pvDelta", dir: -1 };
 
 function setTheme(dark, save = false) {
   document.body.classList.toggle("dark", dark);
@@ -123,6 +123,23 @@ function categoryMetrics(row, totalCount) {
   return `<dl class="category-metrics"><div><dt>構成比</dt><dd>${share.toFixed(1)}%</dd></div><div><dt>表示</dt><dd>${row.observed ? fmt.format(row.impressions) : "—"}</dd></div><div><dt>閲覧率</dt><dd>${rate(viewRate)}</dd></div><div><dt>スキ率</dt><dd>${rate(likeRate)}</dd></div></dl>`;
 }
 
+function renderBenchmark(items, latest) {
+  const comparison = window.NotePulseCampaignComparison;
+  const comparable = items.filter(item => item.d7?.pv != null);
+  const med = values => comparison?.median(values) ?? null;
+  const reaction = item => comparison?.reactionRate(item) ?? null;
+  const fmtMetric = value => value == null ? "—" : fmt.format(Math.round(value));
+  const fmtRate = value => value == null ? "—" : `${value.toFixed(1)}%`;
+  const observedDate = latest.date;
+  const ready = comparable.filter(item => comparison?.compare(item, items, new Set(), observedDate).ready);
+  $("#benchmarkPeriod").textContent = `基準日 ${observedDate.replaceAll("-", ".")} ／ 直近7日`;
+  $("#benchmarkSummary").innerHTML = `
+    <div><span>比較できる記事</span><strong>${fmt.format(ready.length)}</strong><small>${fmt.format(comparable.length)}記事中。分類・公開後日数が同じ3記事以上</small></div>
+    <div><span>7日伸びの中央値</span><strong>${fmtMetric(med(comparable.map(item => item.d7.pv)))}</strong><small>保存ビューの増加</small></div>
+    <div><span>反応率の中央値</span><strong>${fmtRate(med(comparable.map(reaction)))}</strong><small>（スキ＋コメント）÷ 保存ビュー</small></div>
+    <div><span>記事総数</span><strong>${fmt.format(items.length)}</strong><small>公開後日数をそろえず順位づけしません</small></div>`;
+}
+
 function renderAgeMix(items, latest) {
   const groups = [
     { name: "公開7日以内", pv: 0 },
@@ -195,28 +212,17 @@ function renderGrowthCurve(data, items, latest) {
 
 function renderPhaseOne(data, activeItems, dormant, latest, historyDates, allItems) {
   renderHealth(data, latest);
-  renderPeriodComparison(data);
-  renderDormant(dormant, historyDates);
-  renderAgeMix(activeItems, latest);
-  renderGrowthCurve(data, allItems, latest);
-  renderLedger(allItems, dormant, historyDates);
+  renderBenchmark(allItems, latest);
+  renderLedger(allItems, latest.date);
 }
 
 function renderCampaigns(data, articleItems) {
   const campaignData = data.campaignData;
   if (!campaignData) {
     $("#openCampaignList").innerHTML = empty("企画データを準備中", "次回の自動更新後に表示します。");
-    $("#confirmedCampaignMatches").innerHTML = empty("照合データを準備中", "公式企画との照合結果を待っています。");
-    $("#candidateCampaignMatches").innerHTML = empty("候補データを準備中", "確認候補がある場合に表示します。");
     return;
   }
   const campaigns = campaignData.campaigns || [];
-  const matches = campaignData.matches || [];
-  const candidates = campaignData.candidates || [];
-  const campaignById = new Map(campaigns.map(item => [item.id, item]));
-  const articleByKey = new Map(articleItems.map(item => [item.key, item]));
-  const excludedComparisonKeys = new Set([...matches, ...candidates].map(item => item.articleKey));
-  const observedDate = latestDateOf(data);
   const open = campaigns.filter(item => item.status === "open").sort((a, b) => String(a.endAt).localeCompare(String(b.endAt)));
   const dateLabel = value => value ? value.replaceAll("-", ".") : "期限未確認";
   const remaining = value => {
@@ -225,33 +231,9 @@ function renderCampaigns(data, articleItems) {
     return count >= 0 ? `あと${count}日` : "終了";
   };
   const campaignCard = item => `<a class="campaign-card" href="${esc(item.launchUrl)}" target="_blank" rel="noopener noreferrer"><span>${esc(item.type === "prompt" ? "お題" : "コンテスト")}</span><strong>${esc(item.hashtag || item.title)}</strong><small>${esc(item.title)}</small><b>${dateLabel(item.endAt)} <em>${remaining(item.endAt)}</em></b></a>`;
-  const matchRow = (item, candidate = false) => {
-    const campaign = campaignById.get(item.campaignId) || {};
-    const article = articleByKey.get(item.articleKey);
-    const rate = article ? (Number(article.likes || 0) + Number(article.comments || 0)) / Math.max(Number(article.pv || 0), 1) * 100 : null;
-    const metrics = !candidate && article
-      ? `<dl class="campaign-match-metrics"><div><dt>現在の従来ビュー</dt><dd>${fmt.format(article.pv)}</dd></div><div><dt>直近7日ビュー</dt><dd>${article.d7?.pv == null ? "記録中" : signed(article.d7.pv)}</dd></div><div><dt>反応比</dt><dd>${rate.toFixed(1)}%</dd></div></dl>`
-      : "";
-    const comparison = !candidate && article && window.NotePulseCampaignComparison
-      ? window.NotePulseCampaignComparison.compare(article, articleItems, excludedComparisonKeys, observedDate)
-      : null;
-    const comparisonHtml = comparison?.ready
-      ? `<div class="campaign-peer-comparison"><b>同条件 ${comparison.peerCount}記事の中央値と比較</b><small>${esc(article.category)} ／ ${esc(comparison.band)}</small><dl><div><dt>直近7日ビュー</dt><dd>${signed(comparison.articlePv)} <em>中央値 ${fmt.format(comparison.pvMedian)}</em></dd></div><div><dt>反応率</dt><dd>${comparison.articleReaction.toFixed(1)}% <em>中央値 ${comparison.reactionMedian.toFixed(1)}%</em></dd></div></dl></div>`
-      : comparison
-        ? `<div class="campaign-peer-comparison pending"><b>${esc(comparison.reason)}</b><small>${esc(article.category)} ／ ${esc(comparison.band)} ／ 同条件 ${comparison.peerCount}記事（3記事から表示）</small></div>`
-        : "";
-    return `<article class="campaign-match ${candidate ? "candidate" : "confirmed"}"><span>${candidate ? "要確認" : "確認済み"}</span><a href="${esc(item.articleUrl)}" target="_blank" rel="noopener noreferrer">${esc(item.articleTitle)}</a><small>${esc(item.campaignHashtag || campaign.hashtag || campaign.title || "公式企画")}</small>${metrics}${comparisonHtml}</article>`;
-  };
-  $("#openCampaignCount").textContent = fmt.format(open.length);
-  $("#confirmedMatchCount").textContent = fmt.format(new Set(matches.map(item => item.articleKey)).size);
-  $("#candidateMatchCount").textContent = fmt.format(candidates.length);
   $("#campaignCheckedAt").textContent = `最終照合 ${new Date(campaignData.checkedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
   $("#openCampaignList").innerHTML = open.length ? open.map(campaignCard).join("") : empty("募集中の企画はありません", "次回の自動更新で再確認します。");
-  $("#confirmedCampaignMatches").innerHTML = matches.length ? matches.map(item => matchRow(item)).join("") : empty("参加確認はありません", "募集期間まで確認できた記事のみ表示します。");
-  $("#candidateCampaignMatches").innerHTML = candidates.length ? candidates.map(item => matchRow(item, true)).join("") : empty("要確認候補はありません", "あいまいな一致は確定扱いにしません。");
-  $("#campaignCoverage").textContent = campaignData.unavailableArticleCount
-    ? `公開中の記事のうち${fmt.format(campaignData.unavailableArticleCount)}件はnote側で取得できず、毎日再確認しています。`
-    : "公開中の記事をすべて照合できています。";
+  $("#campaignCoverage").textContent = "締切が近い順に表示しています。参加した過去記事の照合と急上昇語句は、次の記事の判断を直接変えないため画面から外しました。";
 }
 
 function renderTrending(data) {
@@ -361,8 +343,6 @@ function render(data) {
   const intervalLabel = intervalHours == null ? "前回取得から" : `前回取得から（${intervalHours.toFixed(1)}時間）`;
 
   renderHeaderAndTotals(data, latest, previous, intervalLabel);
-  renderFunnel(data);
-
   const { items, dates } = buildArticleItems(data);
   const canJudgeDormant = dates.length >= 2;
   const dormant = canJudgeDormant
@@ -371,14 +351,10 @@ function render(data) {
   const dormantKeys = new Set(dormant.map(article => article.key));
   const activeItems = items.filter(article => !dormantKeys.has(article.key));
 
-  renderCategories(items, dormantKeys);
   renderCampaigns(data, items);
-  renderTrending(data);
-  renderTrendAlignment(data);
   renderPhaseOne(data, activeItems, dormant, latest, dates, items);
 
   window.notePulseData = data;
-  window.NotePulseCharts?.render(data);
 }
 
 function showLoadError() {

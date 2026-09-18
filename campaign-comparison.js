@@ -30,9 +30,12 @@
   }
 
   function reactionRate(article) {
-    const pv = Number(article?.pv);
+    const period = article?.d7?.pv != null && article?.d7?.likes != null && article?.d7?.comments != null
+      ? article.d7
+      : article;
+    const pv = Number(period?.pv);
     if (!Number.isFinite(pv) || pv <= 0) return 0;
-    return (Number(article.likes || 0) + Number(article.comments || 0)) / pv * 100;
+    return (Number(period.likes || 0) + Number(period.comments || 0)) / pv * 100;
   }
 
   function compare(article, articles, excludedKeys, observedDate) {
