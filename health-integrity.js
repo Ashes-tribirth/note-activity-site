@@ -89,7 +89,7 @@ function renderHealth(data, latest) {
   const warnings = checks.filter(row => row[1] === "注意").length;
   $("#healthBadge").textContent = warnings ? `${warnings}件 注意` : "異常なし";
   $("#healthBadge").classList.toggle("warn", Boolean(warnings));
-  $("#healthChecks").innerHTML = checks.map(row =>
+  $("#healthChecks").innerHTML = `<p>${warnings ? "注意のある記録は下で確認してください。件数や集計の不一致がある場合は、記事間の優劣や伸びの判断を保留します。" : "取得した記録の件数・集計を確認しました。ただし、タイトルやサムネの効果まで判定できるという意味ではありません。"}</p>` + checks.map(row =>
     `<div class="${row[1] === "正常" ? "ok" : "warn"}"><b>${esc(row[0])}</b><strong>${row[1]}</strong><small>${esc(row[2])}</small></div>`
   ).join("");
 }

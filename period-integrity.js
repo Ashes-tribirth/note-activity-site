@@ -83,7 +83,7 @@ function buildArticleItems(data) {
     const previous = previousDate ? byDate.get(previousDate)?.get(key) : null;
     const baseline = context.baselineDate ? byDate.get(context.baselineDate)?.get(key) : null;
     const dailyRow = funnelByKey.get(key);
-    const ready = ["exact", "provisional"].includes(context.mode);
+    const ready = context.mode === "exact" && Boolean(baseline);
     return {
       ...article,
       key,

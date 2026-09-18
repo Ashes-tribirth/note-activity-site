@@ -123,23 +123,6 @@ function categoryMetrics(row, totalCount) {
   return `<dl class="category-metrics"><div><dt>構成比</dt><dd>${share.toFixed(1)}%</dd></div><div><dt>表示</dt><dd>${row.observed ? fmt.format(row.impressions) : "—"}</dd></div><div><dt>閲覧率</dt><dd>${rate(viewRate)}</dd></div><div><dt>スキ率</dt><dd>${rate(likeRate)}</dd></div></dl>`;
 }
 
-function renderBenchmark(items, latest) {
-  const comparison = window.NotePulseCampaignComparison;
-  const comparable = items.filter(item => item.d7?.pv != null);
-  const med = values => comparison?.median(values) ?? null;
-  const reaction = item => comparison?.reactionRate(item) ?? null;
-  const fmtMetric = value => value == null ? "—" : fmt.format(Math.round(value));
-  const fmtRate = value => value == null ? "—" : `${value.toFixed(1)}%`;
-  const observedDate = latest.date;
-  const ready = comparable.filter(item => comparison?.compare(item, items, new Set(), observedDate).ready);
-  $("#benchmarkPeriod").textContent = `基準日 ${observedDate.replaceAll("-", ".")} ／ 直近7日`;
-  $("#benchmarkSummary").innerHTML = `
-    <div><span>比較できる記事</span><strong>${fmt.format(ready.length)}</strong><small>${fmt.format(comparable.length)}記事中。分類・公開後日数が同じ3記事以上</small></div>
-    <div><span>7日伸びの中央値</span><strong>${fmtMetric(med(comparable.map(item => item.d7.pv)))}</strong><small>保存ビューの増加</small></div>
-    <div><span>反応率の中央値</span><strong>${fmtRate(med(comparable.map(reaction)))}</strong><small>（スキ＋コメント）÷ 保存ビュー</small></div>
-    <div><span>記事総数</span><strong>${fmt.format(items.length)}</strong><small>公開後日数をそろえず順位づけしません</small></div>`;
-}
-
 function median(values) {
   return window.NotePulseCampaignComparison?.median(values) ?? null;
 }
@@ -158,116 +141,11 @@ function followerChange(rows, endDate, daysBack) {
   return Number(end.followerCount) - Number(start.followerCount);
 }
 
-function renderAudience(data, items, latest) {
-  const rows = data.followers || [];
-  const endDate = latest.date;
-  const latestFollower = rows.at(-1)?.followerCount;
-  const within = daysBack => {
-    const cutoff = new Date(`${endDate}T00:00:00Z`);
-    cutoff.setUTCDate(cutoff.getUTCDate() - daysBack);
-    return items.filter(item => item.publishedAt && Date.parse(item.publishedAt) >= cutoff.getTime()).length;
-  };
-  const cells = [
-    ["現在のフォロワー", latestFollower == null ? "—" : fmt.format(latestFollower), "記録した最新値"],
-    ["直近7日", followerChange(rows, endDate, 7) == null ? "記録中" : signed(followerChange(rows, endDate, 7)), `同期間の新規記事 ${within(7)}本`],
-    ["直近30日", followerChange(rows, endDate, 30) == null ? "記録中" : signed(followerChange(rows, endDate, 30)), `同期間の新規記事 ${within(30)}本`],
-    ["観測日数", fmt.format(rows.length), "増加理由は記事単位で未確定"],
-  ];
-  $("#audienceSummary").innerHTML = cells.map(([label, value, note]) => `<div><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join("");
-}
-
 function titleLengthBand(title) {
   const length = [...String(title || "")].length;
   if (length <= 24) return "24字以下";
   if (length <= 44) return "25〜44字";
   return "45字以上";
-}
-
-function contentFactorRows(items, observedDate) {
-  const comparison = window.NotePulseCampaignComparison;
-  if (!comparison) return [];
-  const rate = item => comparison.reactionRate(item);
-  const adjusted = items.map(item => {
-    const band = comparison.ageBand(item.publishedAt, observedDate);
-    if (!band || item.d7?.pv == null) return null;
-    const peers = items.filter(peer => peer.key !== item.key && peer.d7?.pv != null && comparison.ageBand(peer.publishedAt, observedDate)?.key === band.key);
-    if (peers.length < 5) return null;
-    const pvBase = median(peers.map(peer => peer.d7.pv));
-    const reactionBase = median(peers.map(rate));
-    return { ...item, pvDelta: item.d7.pv - pvBase, reactionDelta: rate(item) - reactionBase };
-  }).filter(Boolean);
-  const group = (label, valueOf) => Object.entries(adjusted.reduce((map, item) => {
-    const key = valueOf(item);
-    if (!key) return map;
-    (map[key] ||= []).push(item);
-    return map;
-  }, {})).map(([name, members]) => ({
-    name,
-    count: members.length,
-    pvDelta: median(members.map(item => item.pvDelta)),
-    reactionDelta: median(members.map(item => item.reactionDelta)),
-  })).filter(row => row.count >= 5).sort((a, b) => b.pvDelta - a.pvDelta).map(row => ({ label, ...row }));
-  return [
-    ...group("ジャンル", item => item.category),
-    ...group("タイトル長", item => titleLengthBand(item.title)),
-    ...group("タイトル要素", item => /【[^】]+】/.test(item.title) ? "【】あり" : "【】なし"),
-    ...group("タイトル要素", item => /[？?]/.test(item.title) ? "疑問形あり" : "疑問形なし"),
-    ...group("本文画像数", item => Number(item.features?.imageCount || 0) > 0 ? "画像あり" : "画像なし"),
-    ...group("読者への問い", item => item.features?.hasReaderQuestion ? "あり" : "なし"),
-    ...group("本文量", item => Number(item.features?.bodyLength || 0) <= 1500 ? "1,500字以下" : Number(item.features?.bodyLength || 0) <= 5000 ? "1,501〜5,000字" : "5,001字以上"),
-  ];
-}
-
-function renderFactors(items, latest) {
-  const rows = contentFactorRows(items, latest.date);
-  const card = row => `<article><span>${esc(row.label)}</span><h3>${esc(row.name)}</h3><dl><div><dt>7日伸び差</dt><dd>${signed(Math.round(row.pvDelta))}</dd></div><div><dt>反応率差</dt><dd>${signedPoint(row.reactionDelta)}</dd></div><div><dt>比較数</dt><dd>${row.count}記事</dd></div></dl></article>`;
-  $("#factorBreakdown").innerHTML = rows.length
-    ? rows.map(card).join("")
-    : empty("比較対象を蓄積中", "公開後日数をそろえた5記事以上の比較群ができると表示します。");
-}
-
-function experimentFor(row, kind) {
-  const observation = `同じ公開後日数帯の記事と比べ、${esc(row.label)}「${esc(row.name)}」は7日伸び ${signed(Math.round(row.pvDelta))}、反応率 ${signedPoint(row.reactionDelta)}（${row.count}記事）。`;
-  const titleFactor = row.label.startsWith("タイトル");
-  const designFactor = ["本文画像数", "読者への問い", "本文量"].includes(row.label);
-  let hypothesis;
-  let action;
-  if (kind === "reproduce") {
-    hypothesis = "この要素は、現時点では集客と反応の両方に結び付いている可能性があります。";
-    action = titleFactor
-      ? "次の記事ではタイトルのこの条件を残し、題材・本文構成は普段の型から大きく動かしません。"
-      : designFactor
-        ? "次の記事ではこの本文設計を残し、タイトル・サムネは従来の型から一つだけを選びます。"
-        : "次の記事ではこのジャンル・条件を一度採用し、切り口は別のものにします。";
-  } else if (kind === "entrance") {
-    hypothesis = "開かれてはいる一方で、本文の満足度または期待との一致に課題がある可能性があります。";
-    action = "題材は維持し、タイトル・サムネが約束する内容と導入・本文の着地点をそろえることだけを試します。";
-  } else if (kind === "content") {
-    hypothesis = "読んだ人の反応は悪くない一方で、入口の弱さが伸びを抑えている可能性があります。";
-    action = "本文の型は維持し、タイトルかサムネのどちらか一方だけを変えて閲覧率を確認します。";
-  } else {
-    hypothesis = "この条件は現状の比較では優先的に再現する根拠が弱い状態です。";
-    action = "次回の主軸にはせず、別の仮説を優先します。";
-  }
-  return { observation, hypothesis, action };
-}
-
-function renderDecisionLoop(items, latest) {
-  const rows = contentFactorRows(items, latest.date);
-  const candidates = rows.filter(row => Number.isFinite(row.pvDelta) && Number.isFinite(row.reactionDelta));
-  const select = (predicate, compare) => candidates.filter(predicate).sort(compare)[0];
-  const choices = [
-    [select(row => row.pvDelta > 0 && row.reactionDelta > 0, (a, b) => b.pvDelta - a.pvDelta), "再現候補", "reproduce"],
-    [select(row => row.pvDelta > 0 && row.reactionDelta < 0, (a, b) => b.pvDelta - a.pvDelta), "入口と中身のずれ", "entrance"],
-    [select(row => row.pvDelta < 0 && row.reactionDelta > 0, (a, b) => b.reactionDelta - a.reactionDelta), "入口の改善候補", "content"],
-  ].filter(([row]) => row);
-  const card = ([row, heading, kind]) => {
-    const experiment = experimentFor(row, kind);
-    return `<article><span>${heading}</span><h3>${esc(row.label)}：${esc(row.name)}</h3><dl><div><dt>観測</dt><dd>${experiment.observation}</dd></div><div><dt>仮説</dt><dd>${experiment.hypothesis}</dd></div><div><dt>次の一手</dt><dd>${experiment.action}</dd></div><div><dt>7日後の判定</dt><dd>同条件中央値を上回り、反応率差が0pt以上なら継続候補。届かなければ仮説を保留。</dd></div></dl></article>`;
-  };
-  $("#decisionLoop").innerHTML = choices.length
-    ? choices.map(card).join("")
-    : empty("試行候補を蓄積中", "公開後日数をそろえた比較群が5記事以上になると、観測結果から次の検証案を作ります。");
 }
 
 function renderAgeMix(items, latest) {
@@ -346,7 +224,7 @@ function renderPhaseOne(data, activeItems, dormant, latest, historyDates, allIte
   renderBenchmark(allItems, latest);
   renderFactors(allItems, latest);
   renderDecisionLoop(allItems, latest);
-  renderLedger(allItems, latest.date);
+  renderReadableLedger(allItems, latest.date);
 }
 
 function renderCampaigns(data, articleItems) {
@@ -366,7 +244,7 @@ function renderCampaigns(data, articleItems) {
   const campaignCard = item => `<a class="campaign-card" href="${esc(item.launchUrl)}" target="_blank" rel="noopener noreferrer"><span>${esc(item.type === "prompt" ? "お題" : "コンテスト")}</span><strong>${esc(item.hashtag || item.title)}</strong><small>${esc(item.title)}</small><b>${dateLabel(item.endAt)} <em>${remaining(item.endAt)}</em></b></a>`;
   $("#campaignCheckedAt").textContent = `最終照合 ${new Date(campaignData.checkedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
   $("#openCampaignList").innerHTML = open.length ? open.map(campaignCard).join("") : empty("募集中の企画はありません", "次回の自動更新で再確認します。");
-  $("#campaignCoverage").textContent = "締切が近い順に表示しています。参加した過去記事の照合と急上昇語句は、次の記事の判断を直接変えないため画面から外しました。";
+  $("#campaignCoverage").textContent = "書きたい題材に合うものがあれば募集ページで条件を確認してください。参加によって閲覧やフォローが増えることを保証する一覧ではありません。";
 }
 
 function renderTrending(data) {
@@ -510,3 +388,68 @@ fetch(API, { credentials: "omit" })
     render(prepareData(raw));
   })
   .catch(showLoadError);
+
+// Reader-facing summaries use observed increments, not inferred causes.
+function readableMedian(values) {
+  const valid = values.filter(v => v != null && Number.isFinite(v));
+  return valid.length ? median(valid) : null;
+}
+function countText(value, unit = "回") {
+  return value == null ? "記録不足" : `${fmt.format(Math.round(value * 10) / 10)}${unit}`;
+}
+function periodText(date) { return `${shiftDate(date, -7)} → ${date}の取得時点`; }
+function usableArticles(items) { return items.filter(x => x.d7?.pv != null && x.d7.pv >= 0 && x.d7.likes >= 0 && x.d7.comments >= 0); }
+function articleLinks(items) {
+  return items.slice(0, 3).map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a>：ビュー ${countText(x.d7.pv)}増／スキ ${countText(x.d7.likes, "件")}増</li>`).join("");
+}
+function renderBenchmark(items, latest) {
+  const rows = usableArticles(items), moving = rows.filter(x => x.d7.pv > 0 || x.d7.likes > 0 || x.d7.comments > 0);
+  const top = [...rows].filter(x => x.d7.pv > 0).sort((a,b) => b.d7.pv-a.d7.pv).slice(0,3);
+  $("#benchmarkPeriod").textContent = periodText(latest.date);
+  $("#benchmarkSummary").innerHTML = `<p class="finding">${rows.length ? `${rows.length}記事のうち、${moving.length}記事でビュー・スキ・コメントのいずれかが増えています。` : "7日間を通した記録が足りないため、増え方はまだ比較できません。"}</p><p>まず、最近も動いている記事の題材と切り口を確認してください。以下は直近7日で従来ビューが増えた記事です。新作と過去記事が混ざるため、記事の優劣や次のヒットを示す順位ではありません。</p>${top.length ? `<ul class="evidence-list">${articleLinks(top)}</ul>` : '<p>この期間に従来ビューが増えた記事は確認できません。読者の需要がないとは判断できません。</p>'}<p class="method">従来ビューは新しい公式PVとは別の指標です。公開後7日間の成績ではなく、上記の取得時点間の増加です。</p>`;
+}
+function renderAudience(data, items, latest) {
+  const rows = data.followers || [], now = rows.findLast(x => rowDate(x) === latest.date);
+  const current = followerChange(rows, latest.date, 7), previous = followerChange(rows, shiftDate(latest.date,-7),7);
+  const judgement = current == null ? "7日前の記録がないため、増えるペースはまだ判断できません。" : previous == null ? `直近7日でフォロワーは${signed(current)}人。前の7日との比較は記録不足です。` : `直近7日で${signed(current)}人、その前の7日で${signed(previous)}人。${current>previous ? "前の期間より純増が多くなっています。" : current<previous ? "前の期間より純増が少なくなっています。" : "純増は前の期間と同じです。"}`;
+  $("#audienceSummary").innerHTML = `<p class="finding">${judgement}</p><p>${latest.date}時点のフォロワー：<strong>${now?.followerCount == null ? "未取得" : fmt.format(now.followerCount)+"人"}</strong>。純増は、増えた人数から減った人数を引いた値です。</p><p class="method">直近：${periodText(latest.date)}。前の期間：${periodText(shiftDate(latest.date,-7))}。どの記事からフォローされたか、再び読みに来たかは取得できていないため、ファン化や記事の貢献人数は判断できません。</p>`;
+}
+function factorGroups(items) {
+  const rows=usableArticles(items);
+  const specs=[
+    ["どのジャンルの記事が最近も動いている？", x=>x.category || "要確認"],
+    ["タイトルの長さで増え方は違う？",x=>titleLengthBand(x.title)],
+    ["タイトルに【】を使った記事はどう？",x=>/【[^】]+】/.test(x.title)?"【】あり":"【】なし"],
+    ["疑問符のあるタイトルはどう？",x=>/[？?]/.test(x.title)?"疑問符あり":"疑問符なし"],
+    ["本文の画像の有無で違いはある？",x=>x.features?.imageCount==null?"未記録":Number(x.features.imageCount)>0?"画像あり":"画像なし"],
+    ["読者への問いかけがある記事はどう？",x=>x.features?.hasReaderQuestion==null?"未記録":x.features.hasReaderQuestion?"問いかけあり":"問いかけなし"],
+    ["本文の長さで増え方は違う？",x=>x.features?.bodyLength==null?"未記録":Number(x.features.bodyLength)<=1500?"1,500字以下":Number(x.features.bodyLength)<=5000?"1,501〜5,000字":"5,001字以上"]
+  ];
+  return specs.map(([question,key])=>{
+    const map=new Map();for(const x of rows){const k=key(x);if(!map.has(k))map.set(k,[]);map.get(k).push(x);}
+    return {question,groups:[...map].map(([name,members])=>({name,members,pv:readableMedian(members.map(x=>x.d7.pv)),likes:readableMedian(members.map(x=>x.d7.likes)),comments:readableMedian(members.map(x=>x.d7.comments))}))};
+  });
+}
+function renderFactors(items, latest) {
+  $("#factorBreakdown").innerHTML=factorGroups(items).map(({question,groups})=>{
+    const known=groups.filter(x=>x.name!=="未記録"), enough=known.length>=2 && known.every(x=>x.members.length>=5);
+    const same=enough && new Set(known.map(x=>x.pv)).size===1;
+    const conclusion=!enough?"比較に使える記事が不足しています。" : same?"ビュー増加の中央値に差はありません。この項目では条件を選べません。":"集計値に違いがあります。ただし、この条件が増加の原因とは判断できません。";
+    return `<details class="question-block"><summary>${esc(question)}<small>${conclusion}</small></summary><p>${periodText(latest.date)}。1記事あたりの増加の中央値（小さい順に並べた中央の値）です。題材・公開時期をそろえていない参考集計です。</p><div class="table-wrap"><table><thead><tr><th>条件</th><th>対象記事</th><th>ビュー増加</th><th>スキ増加</th><th>コメント増加</th></tr></thead><tbody>${groups.map(g=>`<tr><th>${esc(g.name)}</th><td>${g.members.length}本${g.members.length<5?"・少数":""}</td><td>${countText(g.pv)}</td><td>${countText(g.likes,"件")}</td><td>${countText(g.comments,"件")}</td></tr>`).join("")}</tbody></table></div><p>次の確認：各条件にどんな記事が含まれているかを見て、題材や公開時期の偏りを確認します。件数が多いことだけでは信頼できる傾向とは言えません。</p>${groups.map(g=>`<details><summary>${esc(g.name)}の対象記事（${g.members.length}本）</summary><ul>${g.members.map(x=>`<li><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a>／公開 ${esc(String(x.publishedAt||"不明").slice(0,10))}</li>`).join("")}</ul></details>`).join("")}</details>`;
+  }).join("") || empty("比較の記録が不足しています","7日間の記録がそろった記事から比較します。");
+}
+function renderDecisionLoop(items, latest) {
+ const candidates=usableArticles(items).filter(x=>x.d7.pv>0 && x.d7.likes>0).sort((a,b)=>b.d7.likes-a.d7.likes).slice(0,3);
+ $("#decisionLoop").innerHTML=`<p class="finding">${candidates.length?"まず、閲覧の指標とスキが両方増えた記事の続きを書けるか検討してください。":"現時点の記録から、優先して再現する記事は選べません。"}</p>${candidates.length?`<ul class="evidence-list">${articleLinks(candidates)}</ul><p>これは次の題材を考えるための候補です。記事を開き、続編で答えられる疑問や、追加できる自分の体験があるかを確認してください。タイトルやサムネが効いたと判断した候補ではありません。</p>`:""}<ol><li><b>書く前：</b>題材・読者に伝えること・今回試す変更を一つ決め、メモします。</li><li><b>公開後：</b>公式のPV、スキ、コメントを公開7日後に記録します。比べる記事も同じ公開後7日の数値が必要です。</li><li><b>次の判断：</b>閲覧と反応のどちらが増えたかを分けて確認し、一度の結果では成功パターンと決めず、別の記事でも試します。</li></ol><p class="method">このページには試行を保存して後日自動判定する機能はまだありません。サムネ属性・記事別フォロー数・再訪の記録もなく、タイトルやサムネの効果、ファン化は現時点では判定できません。</p>`;
+}
+function renderReadableLedger(items, date) {
+ $("#categoryFilter").innerHTML='<option value="">すべての分類</option>'+[...new Set(items.map(x=>x.category))].filter(Boolean).sort().map(x=>`<option>${esc(x)}</option>`).join('');
+ let key='pv',dir=-1;
+ const draw=()=>{
+ const q=$("#ledgerSearch").value.toLowerCase(),cat=$("#categoryFilter").value;
+ const rows=items.filter(x=>(!q||x.title.toLowerCase().includes(q))&&(!cat||x.category===cat)).sort((a,b)=>key==='title'?a.title.localeCompare(b.title,'ja')*dir:((a.d7?.[key]??-Infinity)-(b.d7?.[key]??-Infinity))*dir);
+ $("#ledgerBody").innerHTML=rows.map(x=>`<tr><td><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a></td><td>${esc(x.category)}</td><td>${esc(String(x.publishedAt||'不明').slice(0,10))}</td><td>${countText(x.d7.pv)}</td><td>${countText(x.d7.likes,'件')}</td><td>${countText(x.d7.comments,'件')}</td></tr>`).join('') || '<tr><td colspan="6">一致する記事はありません</td></tr>';
+ };
+ $("#ledgerSearch").oninput=draw;$("#categoryFilter").onchange=draw;
+ document.querySelectorAll('[data-sort]').forEach(el=>{el.onclick=()=>{if(key===el.dataset.sort)dir*=-1;else{key=el.dataset.sort;dir=-1;}draw();};});draw();
+}
