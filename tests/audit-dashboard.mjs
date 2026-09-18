@@ -20,10 +20,13 @@ assert(source["index.html"].includes('href="https://note.com/sitesettings/stats"
 assert(source["index.html"].includes('id="benchmarkSummary"'), "記事実力の要約欄がありません");
 assert(source["index.html"].includes('id="audienceSummary"'), "フォロワー増加の要約欄がありません");
 assert(source["index.html"].includes('id="factorBreakdown"'), "要素別の比較欄がありません");
+assert(source["index.html"].includes('id="decisionLoop"'), "次の試行を示す判断欄がありません");
 assert(source["index.html"].includes("同じ分類・公開後日数帯の中央値"), "比較条件の説明がありません");
 assert(source["app.js"].includes("function renderBenchmark"), "記事実力の要約を描画していません");
 assert(source["app.js"].includes("function renderAudience"), "フォロワー増加を描画していません");
 assert(source["app.js"].includes("function renderFactors"), "要素別比較を描画していません");
+assert(source["app.js"].includes("function renderDecisionLoop"), "観測結果を次の試行へ変換していません");
+assert(source["app.js"].includes("7日後の判定"), "試行の判定基準がありません");
 assert(source["app.js"].includes("titleLengthBand"), "タイトル長を比較していません");
 assert(source["app.js"].includes("hasReaderQuestion"), "読者への問いを比較していません");
 assert(source["app.js"].includes("imageCount"), "本文画像数を比較していません");

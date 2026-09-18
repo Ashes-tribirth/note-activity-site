@@ -16,11 +16,11 @@
 <link rel="stylesheet" href="./layout-fix.css?v=20260822a">
 <link rel="stylesheet" href="./official-dashboard.css?v=20260909a">
 <link rel="stylesheet" href="./funnel.css?v=20260914a">
-<link rel="stylesheet" href="./optimization.css?v=20260918b">
+<link rel="stylesheet" href="./optimization.css?v=20260918c">
 <script src="./period-integrity.js?v=20260918b" defer></script>
 <script src="./health-integrity.js?v=20260915a" defer></script>
 <script src="./campaign-comparison.js?v=20260821a" defer></script>
-<script src="./app.js?v=20260918b" defer></script>
+<script src="./app.js?v=20260918c" defer></script>
 </head>
 <body>
 <main>
@@ -30,6 +30,7 @@
 <section class="panel audience-panel"><div class="title"><div><span>AUDIENCE GROWTH</span><h1>フォロワーの増加を追う</h1></div><small>記事単位の因果は断定しません</small></div><div id="audienceSummary" class="benchmark-summary"></div><p class="method">フォロワー増減はアカウント全体の結果です。記事別の影響は、同じ時期の題材・形式・露出が重なるため、次の投稿分析では仮説として扱います。</p></section>
 <section class="panel benchmark-panel"><div class="title"><div><span>CONTENT FACTORS</span><h1>次の投稿の分析材料</h1></div><small id="benchmarkPeriod">記録中</small></div><div id="benchmarkSummary" class="benchmark-summary"></div><p class="method">公開後日数をそろえた7日伸びと反応率で比較します。数値は結論ではなく、次に試す題材・タイトル・構成の仮説を選ぶための材料です。</p></section>
 <section class="panel factor-panel"><div class="title"><div><span>FACTOR BREAKDOWN</span><h2>要素別の比較</h2></div><small>各群5記事以上で表示</small></div><div id="factorBreakdown" class="factor-breakdown"></div><p class="method">ジャンルは公開後日数帯で、タイトル・本文構成は同じ公開後日数帯の全記事と比べます。サムネイルの色・構図・人物・文字量は現データに記録がないため、数値化していません。</p></section>
+<section class="panel decision-panel"><div class="title"><div><span>NEXT EXPERIMENT</span><h2>数字を次の試行へ変える</h2></div><small>因果ではなく、検証する仮説</small></div><div id="decisionLoop" class="decision-loop"></div><p class="method">各カードは「観測結果 → 仮説 → 次に一つだけ変えること → 7日後の判定基準」の順です。同時に複数要素を変えると、結果を次へ引き継げません。</p></section>
 <section class="panel article-ledger"><div class="title"><div><span>ARTICLE DECISIONS</span><h2>記事別の判断表</h2></div><small>列見出しで並べ替え</small></div><div class="ledger-notes" aria-label="分析表の項目説明"><div><b>7日伸び</b><span>直近7日間の保存ビュー増加</span></div><div><b>同条件中央値</b><span>同じ分類・公開後日数帯の中央値</span></div><div><b>反応率</b><span>（スキ＋コメント）÷ 保存ビュー</span></div><div><b>比較対象</b><span>3記事以上で客観比較を表示</span></div></div><div class="ledger-tools"><input id="ledgerSearch" placeholder="記事名を検索" aria-label="分析表の記事名を検索"><select id="categoryFilter" aria-label="分類で絞り込む"><option value="">すべての分類</option></select></div><div class="table-wrap"><table><thead><tr><th data-sort="title">記事</th><th data-sort="category">分類</th><th data-sort="ageLabel">公開後</th><th data-sort="d7pv">7日伸び</th><th data-sort="pvMedian">同条件中央値</th><th data-sort="pvDelta">平均との差</th><th data-sort="reactionRate">反応率</th><th data-sort="reactionMedian">同条件中央値</th><th data-sort="reactionDelta">平均との差</th><th data-sort="peerCount">比較対象</th></tr></thead><tbody id="ledgerBody"></tbody></table></div></section>
 <section class="external-observations" aria-labelledby="externalObservationsTitle">
   <div class="external-observations-head"><div><span>PHASE 2</span><h2 id="externalObservationsTitle">note外部動向</h2></div><p>自記事の実績を確認した後に見る補助情報</p></div>

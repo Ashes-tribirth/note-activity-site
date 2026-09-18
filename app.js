@@ -226,6 +226,50 @@ function renderFactors(items, latest) {
     : empty("比較対象を蓄積中", "公開後日数をそろえた5記事以上の比較群ができると表示します。");
 }
 
+function experimentFor(row, kind) {
+  const observation = `同じ公開後日数帯の記事と比べ、${esc(row.label)}「${esc(row.name)}」は7日伸び ${signed(Math.round(row.pvDelta))}、反応率 ${signedPoint(row.reactionDelta)}（${row.count}記事）。`;
+  const titleFactor = row.label.startsWith("タイトル");
+  const designFactor = ["本文画像数", "読者への問い", "本文量"].includes(row.label);
+  let hypothesis;
+  let action;
+  if (kind === "reproduce") {
+    hypothesis = "この要素は、現時点では集客と反応の両方に結び付いている可能性があります。";
+    action = titleFactor
+      ? "次の記事ではタイトルのこの条件を残し、題材・本文構成は普段の型から大きく動かしません。"
+      : designFactor
+        ? "次の記事ではこの本文設計を残し、タイトル・サムネは従来の型から一つだけを選びます。"
+        : "次の記事ではこのジャンル・条件を一度採用し、切り口は別のものにします。";
+  } else if (kind === "entrance") {
+    hypothesis = "開かれてはいる一方で、本文の満足度または期待との一致に課題がある可能性があります。";
+    action = "題材は維持し、タイトル・サムネが約束する内容と導入・本文の着地点をそろえることだけを試します。";
+  } else if (kind === "content") {
+    hypothesis = "読んだ人の反応は悪くない一方で、入口の弱さが伸びを抑えている可能性があります。";
+    action = "本文の型は維持し、タイトルかサムネのどちらか一方だけを変えて閲覧率を確認します。";
+  } else {
+    hypothesis = "この条件は現状の比較では優先的に再現する根拠が弱い状態です。";
+    action = "次回の主軸にはせず、別の仮説を優先します。";
+  }
+  return { observation, hypothesis, action };
+}
+
+function renderDecisionLoop(items, latest) {
+  const rows = contentFactorRows(items, latest.date);
+  const candidates = rows.filter(row => Number.isFinite(row.pvDelta) && Number.isFinite(row.reactionDelta));
+  const select = (predicate, compare) => candidates.filter(predicate).sort(compare)[0];
+  const choices = [
+    [select(row => row.pvDelta > 0 && row.reactionDelta > 0, (a, b) => b.pvDelta - a.pvDelta), "再現候補", "reproduce"],
+    [select(row => row.pvDelta > 0 && row.reactionDelta < 0, (a, b) => b.pvDelta - a.pvDelta), "入口と中身のずれ", "entrance"],
+    [select(row => row.pvDelta < 0 && row.reactionDelta > 0, (a, b) => b.reactionDelta - a.reactionDelta), "入口の改善候補", "content"],
+  ].filter(([row]) => row);
+  const card = ([row, heading, kind]) => {
+    const experiment = experimentFor(row, kind);
+    return `<article><span>${heading}</span><h3>${esc(row.label)}：${esc(row.name)}</h3><dl><div><dt>観測</dt><dd>${experiment.observation}</dd></div><div><dt>仮説</dt><dd>${experiment.hypothesis}</dd></div><div><dt>次の一手</dt><dd>${experiment.action}</dd></div><div><dt>7日後の判定</dt><dd>同条件中央値を上回り、反応率差が0pt以上なら継続候補。届かなければ仮説を保留。</dd></div></dl></article>`;
+  };
+  $("#decisionLoop").innerHTML = choices.length
+    ? choices.map(card).join("")
+    : empty("試行候補を蓄積中", "公開後日数をそろえた比較群が5記事以上になると、観測結果から次の検証案を作ります。");
+}
+
 function renderAgeMix(items, latest) {
   const groups = [
     { name: "公開7日以内", pv: 0 },
@@ -301,6 +345,7 @@ function renderPhaseOne(data, activeItems, dormant, latest, historyDates, allIte
   renderAudience(data, allItems, latest);
   renderBenchmark(allItems, latest);
   renderFactors(allItems, latest);
+  renderDecisionLoop(allItems, latest);
   renderLedger(allItems, latest.date);
 }
 
