@@ -221,6 +221,7 @@ function renderGrowthCurve(data, items, latest) {
 function renderPhaseOne(data, activeItems, dormant, latest, historyDates, allItems) {
   renderHealth(data, latest);
   renderAudience(data, allItems, latest);
+  renderReadingStages(data, allItems);
   renderBenchmark(allItems, latest);
   renderFactors(allItems, latest);
   renderDecisionLoop(allItems, latest);
@@ -412,7 +413,34 @@ function renderAudience(data, items, latest) {
   const rows = data.followers || [], now = rows.findLast(x => rowDate(x) === latest.date);
   const current = followerChange(rows, latest.date, 7), previous = followerChange(rows, shiftDate(latest.date,-7),7);
   const judgement = current == null ? "7日前の記録がないため、増えるペースはまだ判断できません。" : previous == null ? `直近7日でフォロワーは${signed(current)}人。前の7日との比較は記録不足です。` : `直近7日で${signed(current)}人、その前の7日で${signed(previous)}人。${current>previous ? "前の期間より純増が多くなっています。" : current<previous ? "前の期間より純増が少なくなっています。" : "純増は前の期間と同じです。"}`;
-  $("#audienceSummary").innerHTML = `<p class="finding">${judgement}</p><p>${latest.date}時点のフォロワー：<strong>${now?.followerCount == null ? "未取得" : fmt.format(now.followerCount)+"人"}</strong>。純増は、増えた人数から減った人数を引いた値です。</p><p class="method">直近：${periodText(latest.date)}。前の期間：${periodText(shiftDate(latest.date,-7))}。どの記事からフォローされたか、再び読みに来たかは取得できていないため、ファン化や記事の貢献人数は判断できません。</p>`;
+  $("#audienceSummary").innerHTML = `<p class="finding">${judgement}</p><p>${latest.date}時点のフォロワー：<strong>${now?.followerCount == null ? "未取得" : fmt.format(now.followerCount)+"人"}</strong>。純増は、増えた人数から減った人数を引いた値です。</p><p class="method">直近：${periodText(latest.date)}。前の期間：${periodText(shiftDate(latest.date,-7))}。どの記事からフォローされたか、再び読みに来たかは取得できていないため、ファン化や記事の貢献人数は判断できません。</p>${followerChart(rows)}`;
+}
+function followerChart(rows) {
+ const values=rows.filter(r=>r.followerCount!=null && Number.isFinite(Number(r.followerCount))).slice(-30);
+ if(values.length<2)return '<p>推移のグラフは2日分の記録から表示します。</p>';
+ const first=Date.parse(rowDate(values[0])),last=Date.parse(rowDate(values.at(-1)));
+ if(first===last)return '';
+ const max=Math.max(1,...values.map(r=>Number(r.followerCount)));
+ const x=r=>60+(Date.parse(rowDate(r))-first)/(last-first)*640,y=r=>210-Number(r.followerCount)/max*165;
+ const segments=values.slice(1).map((r,i)=>rowDate(r)===shiftDate(rowDate(values[i]),1)?`<line x1="${x(values[i])}" y1="${y(values[i])}" x2="${x(r)}" y2="${y(r)}" stroke="#337bd2" stroke-width="3"/>`:'').join('');
+ return `<figure class="data-chart"><figcaption>フォロワー数の推移（最大30日）</figcaption><svg viewBox="0 0 760 260" role="img" aria-label="${esc(rowDate(values[0]))}から${esc(rowDate(values.at(-1)))}のフォロワー数。${values[0].followerCount}人から${values.at(-1).followerCount}人。欠測日は線をつなぎません。">${[0,.5,1].map(t=>`<line x1="60" x2="700" y1="${210-t*165}" y2="${210-t*165}" stroke="#8996a644"/><text x="50" y="${215-t*165}" text-anchor="end">${Math.round(max*t)}人</text>`).join('')}${segments}${values.map(r=>`<circle cx="${x(r)}" cy="${y(r)}" r="4" fill="#337bd2"><title>${esc(rowDate(r))}：${r.followerCount}人</title></circle>`).join('')}<text x="60" y="244">${esc(rowDate(values[0]))}</text><text x="700" y="244" text-anchor="end">${esc(rowDate(values.at(-1)))}</text></svg><details><summary>日ごとの人数を見る</summary><ul>${values.map(r=>`<li>${esc(rowDate(r))}：${r.followerCount}人</li>`).join('')}</ul></details></figure>`;
+}
+function comparisonBars(groups, field, label, unit) {
+ const valid=groups.filter(g=>g[field]!=null && Number.isFinite(g[field]));
+ if(!valid.length)return '';
+ const max=Math.max(1,...valid.map(g=>g[field]));
+ return `<figure class="data-chart"><figcaption>${esc(label)}（1記事あたりの中央値）</figcaption><svg viewBox="0 0 760 ${valid.length*48+35}" role="img" aria-label="${esc(valid.map(g=>g.name+' '+countText(g[field],unit)).join('、'))}">${valid.map((g,i)=>`<text x="0" y="${i*48+25}">${esc(g.name)}</text><rect x="180" y="${i*48+8}" width="${g[field]/max*450}" height="24" rx="3" fill="#337bd2"/><text x="${190+g[field]/max*450}" y="${i*48+25}">${countText(g[field],unit)}</text>`).join('')}<text x="180" y="${valid.length*48+22}">0</text><text x="630" y="${valid.length*48+22}" text-anchor="end">${countText(max,unit)}</text></svg></figure>`;
+}
+function renderReadingStages(data, items) {
+ const box=$('#readingStages'), funnel=data.funnel, rows=funnel?.articles||[];
+ if(!rows.length){box.innerHTML=empty('新しい公式指標は未取得です','インプレッションとPVが取得できるまで、露出と閲覧は比較できません。');return;}
+ const value=(r,k)=>r[k]!=null && Number.isFinite(Number(r[k])) && Number(r[k])>=0?Number(r[k]):null;
+ const fields=[['impressions','表示された回数'],['pageviews','記事が開かれた回数（PV）'],['likes','スキの件数'],['comments','コメントの件数']];
+ const totals=fields.map(([k,label])=>({name:label,pv:rows.every(r=>value(r,k)!=null)?rows.reduce((n,r)=>n+value(r,k),0):null}));
+ const byKey=new Map(items.map(x=>[x.key,x]));
+ const ratio=(r,a,b)=>value(r,a)!=null && value(r,b)>0?(value(r,a)/value(r,b)*100).toFixed(1)+'%':'算出不可';
+ const sorted=[...rows].sort((a,b)=>(value(b,'pageviews')??-1)-(value(a,'pageviews')??-1));
+ box.innerHTML=`<p class="finding">${esc(funnel.date)}の実績：表示 ${countText(totals[0].pv)}、PV ${countText(totals[1].pv)}、スキ ${countText(totals[2].pv,'件')}。</p><p>この日はどの記事に表示と閲覧が集まったかを確認できます。画面に届いている新指標はこの1日分です。先週との比較や、伸びない原因の判定はまだできません。</p><div class="stage-counts">${totals.map(g=>`<div><span>${esc(g.name)}</span><strong>${countText(g.pv,g.name.includes('件数')?'件':'回')}</strong></div>`).join('')}</div><p class="method">公式応答に含まれた${rows.length}記事が対象。返ってこなかった記事は0としません。表示・PV・スキは同じ人を追跡した数字ではありません。PV÷表示数は参考比率で、厳密なクリック率ではありません。</p><h3>PVが多かった記事は、どれくらい表示された？</h3>${comparisonBars(sorted.slice(0,5).map((r,i)=>({name:String(i+1)+'番の記事',pv:value(r,'pageviews')})),'pv','当日のPV','回')}<ol>${sorted.slice(0,5).map(r=>`<li><a href="${esc(byKey.get(r.key)?.url||'https://note.com')}" target="_blank" rel="noopener noreferrer">${esc(byKey.get(r.key)?.title||r.key)}</a>：表示 ${countText(value(r,'impressions'))}／PV ${countText(value(r,'pageviews'))}／スキ ${countText(value(r,'likes'),'件')}。PV÷表示数 ${ratio(r,'pageviews','impressions')}、スキ÷PV ${ratio(r,'likes','pageviews')}。</li>`).join('')}</ol><p><b>次に確認すること：</b>表示が少なければ流入元や告知状況、表示に対するPVが少なければ題材・タイトル・サムネ、閲覧に対する反応が少なければ本文や読者層を確認します。どれも原因の候補であり、この1日で結論を出しません。</p><details><summary>全${rows.length}記事の数値を見る</summary><div class="table-wrap"><table><thead><tr><th>記事</th><th>表示</th><th>PV</th><th>スキ</th><th>コメント</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${esc(byKey.get(r.key)?.title||r.key)}</td>${fields.map(([k])=>`<td>${countText(value(r,k),k==='likes'||k==='comments'?'件':'回')}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details><p class="method">記事別の流入元は現在このページのデータに含まれていません。検索・note内・外部SNSのどこが効いたかは未判定です。</p>`;
 }
 function factorGroups(items) {
   const rows=usableArticles(items);
@@ -435,7 +463,7 @@ function renderFactors(items, latest) {
     const known=groups.filter(x=>x.name!=="未記録"), enough=known.length>=2 && known.every(x=>x.members.length>=5);
     const same=enough && new Set(known.map(x=>x.pv)).size===1;
     const conclusion=!enough?"比較に使える記事が不足しています。" : same?"ビュー増加の中央値に差はありません。この項目では条件を選べません。":"集計値に違いがあります。ただし、この条件が増加の原因とは判断できません。";
-    return `<details class="question-block"><summary>${esc(question)}<small>${conclusion}</small></summary><p>${periodText(latest.date)}。1記事あたりの増加の中央値（小さい順に並べた中央の値）です。題材・公開時期をそろえていない参考集計です。</p><div class="table-wrap"><table><thead><tr><th>条件</th><th>対象記事</th><th>ビュー増加</th><th>スキ増加</th><th>コメント増加</th></tr></thead><tbody>${groups.map(g=>`<tr><th>${esc(g.name)}</th><td>${g.members.length}本${g.members.length<5?"・少数":""}</td><td>${countText(g.pv)}</td><td>${countText(g.likes,"件")}</td><td>${countText(g.comments,"件")}</td></tr>`).join("")}</tbody></table></div><p>次の確認：各条件にどんな記事が含まれているかを見て、題材や公開時期の偏りを確認します。件数が多いことだけでは信頼できる傾向とは言えません。</p>${groups.map(g=>`<details><summary>${esc(g.name)}の対象記事（${g.members.length}本）</summary><ul>${g.members.map(x=>`<li><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a>／公開 ${esc(String(x.publishedAt||"不明").slice(0,10))}</li>`).join("")}</ul></details>`).join("")}</details>`;
+    return `<details class="question-block"><summary>${esc(question)}<small>${conclusion}</small></summary><p>${periodText(latest.date)}。1記事あたりの増加の中央値（小さい順に並べた中央の値）です。題材・公開時期をそろえていない参考集計です。</p>${comparisonBars(groups,"pv","直近7日の従来ビュー増加","回")}${comparisonBars(groups,"likes","直近7日のスキ増加","件")}<div class="table-wrap"><table><thead><tr><th>条件</th><th>対象記事</th><th>ビュー増加</th><th>スキ増加</th><th>コメント増加</th></tr></thead><tbody>${groups.map(g=>`<tr><th>${esc(g.name)}</th><td>${g.members.length}本${g.members.length<5?"・少数":""}</td><td>${countText(g.pv)}</td><td>${countText(g.likes,"件")}</td><td>${countText(g.comments,"件")}</td></tr>`).join("")}</tbody></table></div><p>次の確認：各条件にどんな記事が含まれているかを見て、題材や公開時期の偏りを確認します。件数が多いことだけでは信頼できる傾向とは言えません。</p>${groups.map(g=>`<details><summary>${esc(g.name)}の対象記事（${g.members.length}本）</summary><ul>${g.members.map(x=>`<li><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a>／公開 ${esc(String(x.publishedAt||"不明").slice(0,10))}</li>`).join("")}</ul></details>`).join("")}</details>`;
   }).join("") || empty("比較の記録が不足しています","7日間の記録がそろった記事から比較します。");
 }
 function renderDecisionLoop(items, latest) {

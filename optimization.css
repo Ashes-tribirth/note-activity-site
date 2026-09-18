@@ -96,3 +96,5 @@
 @media(max-width:600px){.panel{padding:18px 14px}.finding{font-size:1.05rem}.question-block{padding:16px 0}.table-wrap{max-width:100%;overflow-x:auto}}
 
 .benchmark-summary p strong{display:inline;font-size:inherit}.health-checks>p{grid-column:1/-1}.question-block table{min-width:580px}.question-block th,.question-block td{font-size:14px;padding:12px}.evidence-list a,.question-block a{color:var(--blue);text-decoration:underline}
+
+.data-chart{margin:20px 0}.data-chart figcaption{font-weight:700;margin-bottom:10px}.data-chart svg{width:100%;height:auto;display:block;max-height:420px}.data-chart text{fill:var(--text,currentColor);font-family:inherit;font-size:14px}.stage-counts{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.stage-counts strong{display:block;font-size:1.5rem}.reading-panel{margin-top:18px;line-height:1.8}#readingStages li{margin:12px 0}@media(max-width:600px){.stage-counts{grid-template-columns:1fr 1fr}.data-chart{overflow-x:auto}.data-chart svg{min-width:560px}.reading-panel .data-chart svg{min-width:440px}}

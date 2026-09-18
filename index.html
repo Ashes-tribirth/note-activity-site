@@ -16,11 +16,11 @@
 <link rel="stylesheet" href="./layout-fix.css?v=20260822a">
 <link rel="stylesheet" href="./official-dashboard.css?v=20260909a">
 <link rel="stylesheet" href="./funnel.css?v=20260914a">
-<link rel="stylesheet" href="./optimization.css?v=20260918readable">
-<script src="./period-integrity.js?v=20260918readable" defer></script>
-<script src="./health-integrity.js?v=20260918readable" defer></script>
+<link rel="stylesheet" href="./optimization.css?v=20260918charts">
+<script src="./period-integrity.js?v=20260918charts" defer></script>
+<script src="./health-integrity.js?v=20260918charts" defer></script>
 <script src="./campaign-comparison.js?v=20260821a" defer></script>
-<script src="./app.js?v=20260918readable" defer></script>
+<script src="./app.js?v=20260918charts" defer></script>
 </head>
 <body>
 <main>
@@ -28,6 +28,7 @@
 <section class="record-strip"><div><span>最終取得</span><strong id="recordDate">--.--</strong><small id="recordTime">--:-- JST</small></div><p id="recordCount">対象 —記事</p><small>保存した実数のみで集計</small><a href="https://note.com/sitesettings/stats" target="_blank" rel="noopener noreferrer">公式ダッシュボード ↗</a></section>
 <details class="panel health-panel"><summary><span>この分析に使う記録は正常？</span><strong id="healthBadge" class="health-badge">確認中</strong></summary><div id="healthChecks" class="health-checks"></div></details>
 <section class="panel audience-panel"><div class="title"><div><h1>フォロワーが増えるペースは変わった？</h1></div><small>記事単位の因果は断定しません</small></div><div id="audienceSummary" class="benchmark-summary"></div></section>
+<section class="panel reading-panel"><div class="title"><div><h2>表示されたあと、記事は開かれている？</h2></div></div><div id="readingStages"></div></section>
 <section class="panel benchmark-panel"><div class="title"><div><h1>最近も読まれている記事は？</h1></div><small id="benchmarkPeriod">記録中</small></div><div id="benchmarkSummary" class="benchmark-summary"></div></section>
 <section class="panel decision-panel"><div class="title"><div><h2>次の記事で何を試す？</h2></div><small>因果ではなく、検証する仮説</small></div><div id="decisionLoop" class="decision-loop"></div></section>
 <section class="panel factor-panel"><div class="title"><div><h2>題材や作り方で、増え方は違う？</h2></div><small>問いを開くと比較と対象記事を確認できます</small></div><div id="factorBreakdown" class="factor-breakdown"></div><p class="method">スキとコメントは別々に確認します。従来ビューで割った値を、読者の満足度や新PVのスキ率としては扱いません。</p></section>

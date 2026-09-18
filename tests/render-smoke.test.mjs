@@ -12,7 +12,8 @@ async function run(fail=false){
  await new Promise(resolve=>setImmediate(resolve));
  if(fail){assert.match(elements.get('#status').textContent,/取得できません/);assert.match(elements.get('#healthChecks').innerHTML,/データを表示できません/);return;}
  assert(context.notePulseData,'render must finish');
- for(const id of ['audienceSummary','benchmarkSummary','factorBreakdown','decisionLoop','ledgerBody','openCampaignList'])assert(elements.get('#'+id).innerHTML.length>0,id+' must render');
+ for(const id of ['audienceSummary','benchmarkSummary','factorBreakdown','decisionLoop','ledgerBody','openCampaignList','readingStages'])assert(elements.get('#'+id).innerHTML.length>0,id+' must render');
+ assert.match(vm.runInContext('comparisonBars([{name:"A",pv:0},{name:"B",pv:10}],"pv","比較","回")',context), /<svg/);
  assert.equal(vm.runInContext('readableMedian([null, 0, 2])',context),1);
  assert.equal(vm.runInContext('readableMedian([null])',context),null);
  assert.equal(vm.runInContext('factorGroups([{title:"Test",d7:{pv:1,likes:0,comments:0}}])[4].groups[0].name',context),'未記録');
