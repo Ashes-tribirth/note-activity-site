@@ -140,6 +140,92 @@ function renderBenchmark(items, latest) {
     <div><span>記事総数</span><strong>${fmt.format(items.length)}</strong><small>公開後日数をそろえず順位づけしません</small></div>`;
 }
 
+function median(values) {
+  return window.NotePulseCampaignComparison?.median(values) ?? null;
+}
+
+function signedPoint(value) {
+  return value == null ? "—" : `${value >= 0 ? "+" : ""}${value.toFixed(1)}pt`;
+}
+
+function followerChange(rows, endDate, daysBack) {
+  const byDate = new Map((rows || []).map(row => [String(row.date || row.collectedDate || "").slice(0, 10), row]));
+  const startDate = new Date(`${endDate}T00:00:00Z`);
+  startDate.setUTCDate(startDate.getUTCDate() - daysBack);
+  const start = byDate.get(startDate.toISOString().slice(0, 10));
+  const end = byDate.get(endDate);
+  if (!start || !end || start.followerCount == null || end.followerCount == null) return null;
+  return Number(end.followerCount) - Number(start.followerCount);
+}
+
+function renderAudience(data, items, latest) {
+  const rows = data.followers || [];
+  const endDate = latest.date;
+  const latestFollower = rows.at(-1)?.followerCount;
+  const within = daysBack => {
+    const cutoff = new Date(`${endDate}T00:00:00Z`);
+    cutoff.setUTCDate(cutoff.getUTCDate() - daysBack);
+    return items.filter(item => item.publishedAt && Date.parse(item.publishedAt) >= cutoff.getTime()).length;
+  };
+  const cells = [
+    ["現在のフォロワー", latestFollower == null ? "—" : fmt.format(latestFollower), "記録した最新値"],
+    ["直近7日", followerChange(rows, endDate, 7) == null ? "記録中" : signed(followerChange(rows, endDate, 7)), `同期間の新規記事 ${within(7)}本`],
+    ["直近30日", followerChange(rows, endDate, 30) == null ? "記録中" : signed(followerChange(rows, endDate, 30)), `同期間の新規記事 ${within(30)}本`],
+    ["観測日数", fmt.format(rows.length), "増加理由は記事単位で未確定"],
+  ];
+  $("#audienceSummary").innerHTML = cells.map(([label, value, note]) => `<div><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join("");
+}
+
+function titleLengthBand(title) {
+  const length = [...String(title || "")].length;
+  if (length <= 24) return "24字以下";
+  if (length <= 44) return "25〜44字";
+  return "45字以上";
+}
+
+function contentFactorRows(items, observedDate) {
+  const comparison = window.NotePulseCampaignComparison;
+  if (!comparison) return [];
+  const rate = item => comparison.reactionRate(item);
+  const adjusted = items.map(item => {
+    const band = comparison.ageBand(item.publishedAt, observedDate);
+    if (!band || item.d7?.pv == null) return null;
+    const peers = items.filter(peer => peer.key !== item.key && peer.d7?.pv != null && comparison.ageBand(peer.publishedAt, observedDate)?.key === band.key);
+    if (peers.length < 5) return null;
+    const pvBase = median(peers.map(peer => peer.d7.pv));
+    const reactionBase = median(peers.map(rate));
+    return { ...item, pvDelta: item.d7.pv - pvBase, reactionDelta: rate(item) - reactionBase };
+  }).filter(Boolean);
+  const group = (label, valueOf) => Object.entries(adjusted.reduce((map, item) => {
+    const key = valueOf(item);
+    if (!key) return map;
+    (map[key] ||= []).push(item);
+    return map;
+  }, {})).map(([name, members]) => ({
+    name,
+    count: members.length,
+    pvDelta: median(members.map(item => item.pvDelta)),
+    reactionDelta: median(members.map(item => item.reactionDelta)),
+  })).filter(row => row.count >= 5).sort((a, b) => b.pvDelta - a.pvDelta).map(row => ({ label, ...row }));
+  return [
+    ...group("ジャンル", item => item.category),
+    ...group("タイトル長", item => titleLengthBand(item.title)),
+    ...group("タイトル要素", item => /【[^】]+】/.test(item.title) ? "【】あり" : "【】なし"),
+    ...group("タイトル要素", item => /[？?]/.test(item.title) ? "疑問形あり" : "疑問形なし"),
+    ...group("本文画像数", item => Number(item.features?.imageCount || 0) > 0 ? "画像あり" : "画像なし"),
+    ...group("読者への問い", item => item.features?.hasReaderQuestion ? "あり" : "なし"),
+    ...group("本文量", item => Number(item.features?.bodyLength || 0) <= 1500 ? "1,500字以下" : Number(item.features?.bodyLength || 0) <= 5000 ? "1,501〜5,000字" : "5,001字以上"),
+  ];
+}
+
+function renderFactors(items, latest) {
+  const rows = contentFactorRows(items, latest.date);
+  const card = row => `<article><span>${esc(row.label)}</span><h3>${esc(row.name)}</h3><dl><div><dt>7日伸び差</dt><dd>${signed(Math.round(row.pvDelta))}</dd></div><div><dt>反応率差</dt><dd>${signedPoint(row.reactionDelta)}</dd></div><div><dt>比較数</dt><dd>${row.count}記事</dd></div></dl></article>`;
+  $("#factorBreakdown").innerHTML = rows.length
+    ? rows.map(card).join("")
+    : empty("比較対象を蓄積中", "公開後日数をそろえた5記事以上の比較群ができると表示します。");
+}
+
 function renderAgeMix(items, latest) {
   const groups = [
     { name: "公開7日以内", pv: 0 },
@@ -212,7 +298,9 @@ function renderGrowthCurve(data, items, latest) {
 
 function renderPhaseOne(data, activeItems, dormant, latest, historyDates, allItems) {
   renderHealth(data, latest);
+  renderAudience(data, allItems, latest);
   renderBenchmark(allItems, latest);
+  renderFactors(allItems, latest);
   renderLedger(allItems, latest.date);
 }
 
