@@ -39,7 +39,7 @@
       const shortSpan=age(dates[0],model.end);
       const provisional=shortSpan>0&&shortSpan<7?delta(model,a.key,model.end,shortSpan):null;
       const dormantBasis=valid(d7)?d7:provisional;
-      return {...a,delta:d,age:aDays,band:aDays===null?'公開日不明':aDays<=7?'新作（0〜7日）':aDays<=30?'中期（8〜30日）':'過去記事（31日〜）',dormant:valid(dormantBasis)&&fields.every(f=>dormantBasis[f]===0),provisionalDormant:!valid(d7)&&valid(provisional)};
+      return {...a,delta:d,age:aDays,band:aDays===null?'公開日不明':aDays<=7?'新作（0〜7日）':aDays<=30?'中期（8〜30日）':'過去記事（31日〜）',dormant:valid(dormantBasis)&&fields.every(f=>dormantBasis[f]===0),provisionalDormant:!valid(d7)&&valid(provisional)&&fields.every(f=>provisional[f]===0)};
     });
     const eligible=items.filter(a=>valid(a.delta));
     const comparable=eligible.filter(a=>valid(delta(model,a.key,shift(model.end,-n),n)));

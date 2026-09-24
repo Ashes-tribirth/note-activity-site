@@ -88,7 +88,7 @@ function drawTrend() {
 }
 function groupBars(groups,filter) {
   const max=Math.max(1,...groups.map(g=>Math.abs(g.value??0)));
-  return groups.map(g=>`<button type="button" class="bar-row" data-filter="${filter}" data-value="${esc(g.name)}"><span class="bar-top"><span>${esc(g.name)}</span><strong>${signed(g.value)}<small> 回</small></strong></span><svg viewBox="0 0 400 7" preserveAspectRatio="none" aria-hidden="true"><rect width="400" height="7" fill="#e4ebf0"/><rect width="${Math.abs(g.value??0)/max*400}" height="7" fill="${g.value<0?'#8f7457':'#4e8fab'}"/></svg><small>全${g.all}本 ／ 集計${g.count}本 ／ 直近7日の活動${g.active}本${g.unknown?`・判定待ち${g.unknown}本`:''}</small></button>`).join('');
+  return groups.map(g=>`<button type="button" class="bar-row" data-filter="${filter}" data-value="${esc(g.name)}"><span class="bar-top"><span>${esc(g.name)}</span><strong>${signed(g.value)}${g.value===null?'':'<small> 回</small>'}</strong></span><svg viewBox="0 0 400 7" preserveAspectRatio="none" aria-hidden="true"><rect width="400" height="7" fill="#e4ebf0"/><rect width="${Math.abs(g.value??0)/max*400}" height="7" fill="${g.value<0?'#8f7457':'#4e8fab'}"/></svg><small>全${g.all}本 ／ 集計${g.count}本 ／ 直近7日の活動${g.active}本${g.unknown?`・判定待ち${g.unknown}本`:''}</small></button>`).join('');
 }
 function drawContributions() {
   const groups=key=>[...new Set(period.items.map(a=>a[key]))].map(name=>{
@@ -189,7 +189,7 @@ function bind() {
     if(target.dataset.detail){drawDetail(target.dataset.detail);$('#articleDialog').showModal();}
     if(target.dataset.remove)toggleCompare(target.dataset.remove);
     if(target.dataset.toggleCompare)toggleCompare(target.dataset.toggleCompare);
-    if(target.dataset.filter){$('#'+target.dataset.filter).value=target.dataset.value;drawLedger();$('#articles').scrollIntoView({behavior:'smooth',block:'start'});}
+    if(target.dataset.filter){for(const id of ['search','category','ageFilter'])$('#'+id).value='';$('#'+target.dataset.filter).value=target.dataset.value;drawLedger();$('#articles').scrollIntoView({behavior:'smooth',block:'start'});}
   });
   $('#retry').addEventListener('click',load);
 }
@@ -207,4 +207,5 @@ async function load() {
     $('#retry').hidden=false;
   }
 }
+window.addEventListener?.('resize',()=>{if(model){drawTrend();if(detailKey)drawDetail(detailKey);}});
 bind();load();
