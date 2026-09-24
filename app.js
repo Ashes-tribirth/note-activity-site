@@ -80,11 +80,34 @@ function drawOverview() {
   drawTrend();
 }
 function drawTrend() {
-  const metric=$('#metric').value||'pv', follow=['followers','following'].includes(metric), field=metric==='followers'?'followerCount':'followingCount';
+  const metric=$('#metric').value||'pv', follow=metric==='following', field='followingCount';
   const points=M.range(model.end,period.n).map(date=>({date,value:follow?M.numeric(model.followers.get(date)?.[field]):period.eligible.length?period.eligible.reduce((s,a)=>s+M.numeric(model.history.get(a.key).get(date)[metric])-M.numeric(model.history.get(a.key).get(period.start)[metric]),0):null}));
   $('#trendTitle').textContent=follow?`${labels[metric]}数の推移`:`${labels[metric]}：期間開始からの増加`;
   $('#overviewChart').innerHTML=lineChart(points,units[metric],$('#trendTitle').textContent);
   $('#overviewValues').innerHTML=table(['取得日',follow?labels[metric]+'数':'期間開始からの増加'],points.map(p=>`<tr><td>${p.date}</td><td>${number(p.value)}${p.value===null?'':units[metric]}</td></tr>`));
+}
+function drawFollowerTrend() {
+  const points=[...model.followers.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([date,row])=>({date,value:M.numeric(row.followerCount)}));
+  const valid=points.filter(p=>p.value!==null);
+  $('#followerChart').innerHTML=lineChart(points,'人','フォロワー数の推移');
+  $('#followerValues').innerHTML=valid.length?table(['取得日','フォロワー数'],points.map(p=>`<tr><td>${p.date}</td><td>${number(p.value)}${p.value===null?'':'人'}</td></tr>`)):empty('フォロワー履歴を記録中です。');
+  $('#followerTrendMeta').textContent=valid.length<2?'記録中':`${valid[0].date} → ${valid.at(-1).date} ／ ${signed(valid.at(-1).value-valid[0].value)}人`;
+}
+function median(values) {
+  const sorted=[...values].sort((a,b)=>a-b),n=sorted.length;
+  return n%2?sorted[(n-1)/2]:(sorted[n/2-1]+sorted[n/2])/2;
+}
+function drawArticlePosition() {
+  const items=period.items.filter(a=>!a.dormant&&M.numeric(a.pv)!==null&&M.numeric(a.pv)>0&&M.numeric(a.likes)!==null&&M.numeric(a.comments)!==null).map(a=>({...a,rate:(Number(a.likes)+Number(a.comments))/Number(a.pv)*100}));
+  if(items.length<2){$('#articlePosition').innerHTML=empty('四象限を描くための実測記事が不足しています。記録中です。');$('#positionNote').textContent='';return;}
+  const midPv=median(items.map(a=>Number(a.pv))),midRate=median(items.map(a=>a.rate));
+  const width=Math.max(320,Math.min(980,(Number(window.innerWidth)||1080)-100)),height=390,left=62,right=22,top=24,bottom=55;
+  const maxPv=Math.max(1,...items.map(a=>Number(a.pv))),maxRate=Math.max(1,...items.map(a=>a.rate));
+  const x=v=>left+v/maxPv*(width-left-right),y=v=>height-bottom-v/maxRate*(height-top-bottom);
+  const xMid=x(midPv),yMid=y(midRate);
+  const dots=items.map(a=>`<circle class="position-point" cx="${x(Number(a.pv))}" cy="${y(a.rate)}" r="4"><title>${esc(a.title)}｜PV ${number(a.pv)}｜反応率 ${a.rate.toFixed(1)}%</title></circle>`).join('');
+  $('#articlePosition').innerHTML=`<div class="position-wrap"><svg class="position-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="記事ごとの累計PVと反応率の四象限"><line class="position-axis" x1="${left}" y1="${height-bottom}" x2="${width-right}" y2="${height-bottom}"/><line class="position-axis" x1="${left}" y1="${top}" x2="${left}" y2="${height-bottom}"/><line class="position-mid" x1="${xMid}" y1="${top}" x2="${xMid}" y2="${height-bottom}"/><line class="position-mid" x1="${left}" y1="${yMid}" x2="${width-right}" y2="${yMid}"/><text class="position-label" x="${left}" y="14">反応率（%）</text><text class="position-label" x="${width-right}" y="${height-16}" text-anchor="end">累計PV</text><text class="position-quadrant" x="${left+10}" y="${top+18}">高反応・低PV</text><text class="position-quadrant" x="${width-right-10}" y="${top+18}" text-anchor="end">高反応・高PV</text><text class="position-quadrant" x="${left+10}" y="${height-bottom-10}">低反応・低PV</text><text class="position-quadrant" x="${width-right-10}" y="${height-bottom-10}" text-anchor="end">低反応・高PV</text><text class="position-tick" x="${xMid}" y="${height-bottom+20}" text-anchor="middle">中央値 ${number(Math.round(midPv))}</text><text class="position-tick" x="${left-8}" y="${yMid+4}" text-anchor="end">${midRate.toFixed(1)}%</text>${dots}</svg></div>`;
+  $('#positionNote').textContent=`表示${items.length}本。直近7日で動きのない記事は除外。四象限は記事の優劣ではなく、現在のPV規模と反応の位置関係を確認するためのものです。基準：PV中央値 ${number(Math.round(midPv))}、反応率中央値 ${midRate.toFixed(1)}%。`;
 }
 function groupBars(groups,filter) {
   const max=Math.max(1,...groups.map(g=>Math.abs(g.value??0)));
@@ -170,7 +193,7 @@ function toggleCompare(key) {
 }
 function draw() {
   period=M.period(model,Number($('#period').value)||7);
-  drawHealth();drawOverview();drawContributions();drawLedger();drawComparison();drawOfficial();drawCampaigns();
+  drawHealth();drawOverview();drawFollowerTrend();drawContributions();drawArticlePosition();drawLedger();drawComparison();drawOfficial();drawCampaigns();
   if(detailKey)drawDetail(detailKey);
 }
 function bind() {
@@ -209,5 +232,5 @@ async function load() {
     $('#retry').hidden=false;
   }
 }
-window.addEventListener?.('resize',()=>{if(model){drawTrend();if(detailKey)drawDetail(detailKey);}});
+window.addEventListener?.('resize',()=>{if(model){drawTrend();drawFollowerTrend();drawArticlePosition();if(detailKey)drawDetail(detailKey);}});
 bind();load();
