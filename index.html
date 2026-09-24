@@ -3,46 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://sora-note-log.ashestribirth.chatgpt.site; style-src 'self'; script-src 'self'; img-src 'self' https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://sora-note-log.ashestribirth.chatgpt.site; style-src 'self'; script-src 'self'; img-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>note Pulse</title>
-<meta name="description" content="note活動の実態と進捗を、保存した数値から正確に確認するダッシュボード">
-<link rel="stylesheet" href="./style.css?v=20260901a">
-<link rel="stylesheet" href="./activity.css?v=20260816a">
-<link rel="stylesheet" href="./typography.css">
-<link rel="stylesheet" href="./observatory.css?v=20260821f">
-<link rel="stylesheet" href="./connection-insights.css?v=20260819a">
-<link rel="stylesheet" href="./sky-compass-motif.css?v=20260822a">
-<link rel="stylesheet" href="./layout-fix.css?v=20260822a">
-<link rel="stylesheet" href="./official-dashboard.css?v=20260909a">
-<link rel="stylesheet" href="./funnel.css?v=20260914a">
-<link rel="stylesheet" href="./optimization.css?v=20260918charts">
-<script src="./period-integrity.js?v=20260918charts" defer></script>
-<script src="./health-integrity.js?v=20260918charts" defer></script>
-<script src="./campaign-comparison.js?v=20260821a" defer></script>
-<script src="./app.js?v=20260918charts" defer></script>
+<title>note Pulse — 活動の変化を確かめる</title>
+<meta name="description" content="全体の変化から記事の内訳、推移、同じ公開後日数での比較へ。そらのnote活動分析。">
+<link rel="stylesheet" href="./dashboard.css?v=20260924a">
+<script src="./analysis-model.js?v=20260924a" defer></script>
+<script src="./app.js?v=20260924a" defer></script>
 </head>
 <body>
-<main>
-<header><a class="brand" href="./"><b><img class="sky-light" src="https://raw.githubusercontent.com/Ashes-tribirth/note-tools-site/main/favi_sky_Compass_light.png" alt=""><img class="sky-dark" src="https://raw.githubusercontent.com/Ashes-tribirth/note-tools-site/main/favi_sky_Compass_dark.png" alt=""></b><span><strong>note Pulse</strong><small>次の記事を考えるための記録</small></span></a><div><span id="status" class="status">● 接続確認中</span><button id="theme" type="button" aria-label="ダークモードに切り替える" aria-pressed="false">☾</button></div></header>
-<section class="record-strip"><div><span>最終取得</span><strong id="recordDate">--.--</strong><small id="recordTime">--:-- JST</small></div><p id="recordCount">対象 —記事</p><small>保存した実数のみで集計</small><a href="https://note.com/sitesettings/stats" target="_blank" rel="noopener noreferrer">公式ダッシュボード ↗</a></section>
-<details class="panel health-panel"><summary><span>この分析に使う記録は正常？</span><strong id="healthBadge" class="health-badge">確認中</strong></summary><div id="healthChecks" class="health-checks"></div></details>
-<section class="panel audience-panel"><div class="title"><div><h1>フォロワーが増えるペースは変わった？</h1></div><small>記事単位の因果は断定しません</small></div><div id="audienceSummary" class="benchmark-summary"></div></section>
-<section class="panel reading-panel"><div class="title"><div><h2>表示されたあと、記事は開かれている？</h2></div></div><div id="readingStages"></div></section>
-<section class="panel benchmark-panel"><div class="title"><div><h1>最近も読まれている記事は？</h1></div><small id="benchmarkPeriod">記録中</small></div><div id="benchmarkSummary" class="benchmark-summary"></div></section>
-<section class="panel decision-panel"><div class="title"><div><h2>次の記事で何を試す？</h2></div><small>因果ではなく、検証する仮説</small></div><div id="decisionLoop" class="decision-loop"></div></section>
-<section class="panel factor-panel"><div class="title"><div><h2>題材や作り方で、増え方は違う？</h2></div><small>問いを開くと比較と対象記事を確認できます</small></div><div id="factorBreakdown" class="factor-breakdown"></div><p class="method">スキとコメントは別々に確認します。従来ビューで割った値を、読者の満足度や新PVのスキ率としては扱いません。</p></section>
-<section class="panel article-ledger"><div class="title"><div><h2>各記事で何が増えたかを確かめる</h2></div><small>列見出しで並べ替え</small></div><p class="method">直近7日の取得時点間の増加です。従来ビュー・スキ・コメントを別々に表示します。未取得は0にせず「記録不足」と表示します。列見出しで並べ替えできます。</p><div class="ledger-tools"><input id="ledgerSearch" placeholder="記事名を検索" aria-label="分析表の記事名を検索"><select id="categoryFilter" aria-label="分類で絞り込む"><option value="">すべての分類</option></select></div><div class="table-wrap"><table><thead><tr><th data-sort="title">記事名</th><th>ジャンル</th><th>公開日</th><th data-sort="pv">従来ビューの増加</th><th data-sort="likes">スキの増加</th><th data-sort="comments">コメントの増加</th></tr></thead><tbody id="ledgerBody"></tbody></table></div></section>
-<section class="external-observations" aria-labelledby="externalObservationsTitle">
-  <div class="external-observations-head"><div><h2 id="externalObservationsTitle">note外部動向</h2></div><p>自記事の実績を確認した後に見る補助情報</p></div>
-  <section class="panel campaign-panel">
-    <div class="title"><div><h2>書きたい題材に合う公式企画はある？</h2></div><small id="campaignCheckedAt">確認中</small></div>
-    <div class="campaign-block"><div class="campaign-heading"><div><h3>現在募集中の企画</h3><small>締切が近い順</small></div></div><div id="openCampaignList" class="campaign-list"></div></div>
-    <p id="campaignCoverage" class="method">企画データを読み込んでいます。</p>
-  </section>
-</section>
-<section class="data-status"><p><b>データについて：</b><span id="lastFetched">—</span>取得。更新は毎朝4:00ごろ。記録が足りない記事は「記録不足」と表示します。従来ビューと新PVは混ぜません。</p></section>
-<footer><b>note Pulse</b><small>2026年8月13日から記録</small></footer>
+<a class="skip" href="#overview">分析へ進む</a>
+<header class="site-header"><div class="shell header-inner"><a class="brand" href="./">note <b>Pulse</b><span>そらの活動記録</span></a><a class="external-link" href="https://note.com/sitesettings/stats" target="_blank" rel="noopener noreferrer">公式ダッシュボード ↗</a></div></header>
+<main class="shell">
+<div class="page-heading"><div><p class="eyebrow">ACTIVITY REPORT</p><h1>最近の変化を確かめる</h1></div><p id="updated" class="muted">取得日時を確認中</p></div>
+<details id="health" class="health"><summary><span id="status" role="status">データを読み込んでいます</span><span class="muted">記録の状態</span></summary><div id="healthChecks"></div><button id="retry" type="button" hidden>再読み込み</button></details>
+<nav class="section-nav" aria-label="分析項目"><a href="#overview">全体</a><a href="#contribution">増加の内訳</a><a href="#articles">記事を調べる</a><a href="#compare">記事を比較</a><a href="#official">新PV・表示</a></nav>
+<div class="period-toolbar"><div><label for="period">集計期間</label><select id="period"><option value="7">直近7日</option><option value="30">直近30日</option></select></div><p id="periodLabel">期間を確認中</p><span class="tag">従来ビューの履歴</span></div>
+<section id="overview" class="panel"><div class="section-title"><div><p class="step">01 / 全体</p><h2>前の期間と比べて、どう変わった？</h2></div><span id="publicationCount" class="tag"></span></div><div id="summaryCards" class="summary-grid"></div><p id="coverage" class="basis"></p><div class="chart-heading"><h3 id="trendTitle">期間の推移</h3><label>表示する指標 <select id="metric"><option value="pv">従来ビュー</option><option value="likes">スキ</option><option value="comments">コメント</option><option value="followers">フォロワー</option><option value="following">フォロー</option></select></label></div><div id="overviewChart"></div><details class="data-details"><summary>日付と数値を確認</summary><div id="overviewValues" class="table-wrap"></div></details><details class="data-details"><summary>現在の累計</summary><div id="lifetime"></div></details></section>
+<section id="contribution" class="panel"><div class="section-title"><div><p class="step">02 / 内訳</p><h2>どの記事が増加を作った？</h2></div></div><p class="muted">棒を選ぶと、その記事に絞り込めます。記事の年齢は最終取得日時点です。</p><div class="split"><div><h3>公開からの日数別</h3><div id="ageMix"></div></div><div><h3>分類別</h3><div id="categoryMix"></div></div></div><p id="contributionNote" class="basis"></p></section>
+<section id="articles" class="panel"><div class="section-title"><div><p class="step">03 / 記事</p><h2>気になる記事を調べる</h2></div><a href="#compare" id="selectionLink">比較する記事：0本</a></div><div class="filters"><label class="search-label">記事名<input id="search" type="search" placeholder="記事名で検索"></label><label>分類<select id="category"><option value="">すべての分類</option></select></label><label>公開からの日数<select id="ageFilter"><option value="">すべて</option><option>新作（0〜7日）</option><option>中期（8〜30日）</option><option>過去記事（31日〜）</option><option>公開日不明</option></select></label><label>並び順<select id="sort"><option value="pv">従来ビューの増加順</option><option value="likes">スキの増加順</option><option value="comments">コメントの増加順</option><option value="new">公開が新しい順</option></select></label><button id="clearFilters" class="text-button" type="button">絞り込み解除</button></div><p id="articleCount" class="basis" aria-live="polite"></p><div id="ledger" class="table-wrap"></div><details class="dormant"><summary id="dormantLabel">直近7日で動きのない記事</summary><p id="dormantSummary" class="basis"></p><div id="dormantLedger" class="table-wrap"></div></details></section>
+<section id="compare" class="panel"><div class="section-title"><div><p class="step">04 / 比較</p><h2>公開後の日数をそろえて比べる</h2></div><label>取得日 <select id="compareAge"><option value="7">公開7日後</option><option value="3">公開3日後</option><option value="30">公開30日後</option></select></label></div><p class="muted">記事一覧の「比較」を選択（最大4本）。同じ分類・近い題材の記事から選ぶと違いを調べやすくなります。</p><div id="comparison"></div><p class="basis">公開日の7日後など、同じ日付基準の取得値を比較します。厳密な公開168時間後ではありません。取得時の経過時間も併記します。記録のない日は補いません。</p></section>
+<section id="official" class="panel official"><div class="section-title"><div><p class="step">別集計 / 新しい公式指標</p><h2>表示と閲覧を、同じ記事で確認する</h2></div><span id="officialDate" class="tag"></span></div><p class="muted">ここからは上の期間集計とは別です。新PVは現在取得できる単日分を表示します。</p><div id="officialCards" class="summary-grid"></div><details><summary>記事別の表示・PV・反応を見る</summary><div id="officialTable" class="table-wrap"></div></details><p class="basis">表示・PV・スキは同じ人を追跡した数字ではありません。流入元の記録は現在このページに届いていません。</p></section>
+<details id="external" class="panel"><summary><span>自分の実績を確認したあとに：募集中の公式企画</span></summary><p id="campaignCheckedAt" class="basis"></p><div id="openCampaignList" class="campaign-list"></div><p class="basis">取得できた公式企画のみ。自分の記事との相性や参加条件は募集元で確認してください。</p></details>
+<footer>note Pulse <span>実測の記録から、自分で確かめる。</span></footer>
 </main>
-</body>
-</html>
+<dialog id="articleDialog" aria-labelledby="detailTitle"><div class="dialog-head"><p class="step">記事の詳細</p><button id="closeDetail" type="button" aria-label="記事詳細を閉じる">閉じる ×</button></div><h2 id="detailTitle"></h2><div id="articleDetail"></div></dialog>
+<noscript>分析の表示にはJavaScriptを有効にしてください。</noscript>
+</body></html>

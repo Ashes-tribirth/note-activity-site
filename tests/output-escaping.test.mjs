@@ -1,14 +1,8 @@
-import assert from "node:assert/strict";
-import fs from "node:fs";
-import vm from "node:vm";
-
-const source = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
-const escSource = source.match(/const esc = value =>[\s\S]*?\n\};/)?.[0];
-
-assert.ok(escSource, "app.js の共通エスケープ処理を取得できること");
-
-const context = {};
-vm.runInNewContext(`${escSource}; globalThis.result = esc('&<>"\\'');`, context);
-assert.equal(context.result, "&amp;&lt;&gt;&quot;&#39;");
-
-console.log("output escaping tests: ok");
+import assert from 'node:assert/strict';
+import {run,fixture} from './harness.mjs';
+const data=structuredClone(fixture);data.articles[0].title='<img src=x onerror=alert(1)> & "test"';data.articles[0].url='javascript:alert(1)';data.campaignData={campaigns:[{status:'open',title:'<script>bad</script>',launchUrl:'javascript:alert(1)'}]};
+const ui=await run(data);assert(ui.context.notePulseData);
+assert(ui.elements.get('#ledger').innerHTML.includes('&lt;img'));assert(!ui.elements.get('#ledger').innerHTML.includes('<img'));
+ui.eval('drawDetail("test")');assert(!ui.elements.get('#articleDetail').innerHTML.includes('javascript:'));
+assert(!ui.elements.get('#openCampaignList').innerHTML.includes('<script>'));assert(!ui.elements.get('#openCampaignList').innerHTML.includes('javascript:'));
+console.log('Output and URL escaping passed.');
