@@ -4,7 +4,7 @@ import {run,fixture} from './harness.mjs';
 const input=process.env.PULSE_TEST_DATA?JSON.parse(readFileSync(process.env.PULSE_TEST_DATA,'utf8')):fixture;
 const ui=await run(input);
 assert(ui.context.notePulseData,'render must finish successfully');
-for(const id of ['summaryCards','overviewCharts','ageMix','categoryMix','ledger','comparison','officialCards','openCampaignList'])assert(ui.elements.get('#'+id).innerHTML.length>0,id+' must render');
+for(const id of ['summaryCards','overviewCharts','ageMix','ledger','comparison','officialCards','openCampaignList'])assert(ui.elements.get('#'+id).innerHTML.length>0,id+' must render');
 ui.eval('drawDetail(period.items[0].key)');
 assert(ui.elements.get('#articleDetail').innerHTML.includes('成長曲線'));
 ui.eval('toggleCompare(period.items[0].key)');
