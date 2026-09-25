@@ -112,6 +112,7 @@ function categoryEvidence() {
     const complete=official.filter(x=>['impressions','pageviews','likes','comments'].every(f=>M.numeric(x.row[f])!==null)).length;
     let confidence=!latestFunnelRows().length?'記録中':items.length>=3&&d7.length>=3&&complete>=3?'限定的':'不足';
     if(confidence==='限定的'&&(topShare===null||topShare<=0.7))confidence='十分';
+    if(category==='要確認')confidence='不足';
     const recurrence=contributors.length>=2&&topShare!==null&&topShare<=0.7?'複数記事で確認':contributors.length===1||topShare>0.7?'単一記事の影響が大きい':'確認できず';
     return {category,items,official,d7,active,pv7,topShare,totals,published,confidence,recurrence,impPv:ratio(totals.pv,totals.imp),pvLike:ratio(totals.likes,totals.pv)};
   }).sort((a,b)=>(b.pv7??-Infinity)-(a.pv7??-Infinity));
