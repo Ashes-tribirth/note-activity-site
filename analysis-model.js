@@ -7,7 +7,6 @@
   const age = (published, date) => published && Number.isFinite(Date.parse(published)) ? Math.floor((Date.parse(date + 'T00:00:00Z') - Date.parse(String(published).slice(0, 10) + 'T00:00:00Z')) / DAY) : null;
   const range = (end, n) => Array.from({length:n+1}, (_,i)=>shift(end,i-n));
   const fields = ['pv','likes','comments'];
-  const reviewed = {n3445e9974c2c:'エッセイ・日常',nc0ba447096ad:'孫子・思考',n715119ad26e9:'ゲーム・趣味',nd997cebc4486:'エッセイ・日常'};
   function create(raw) {
     const summaries = [...(raw.summaries || [])].sort((a,b)=>dateOf(a).localeCompare(dateOf(b)));
     const latest = summaries.at(-1);
@@ -18,7 +17,7 @@
       history.get(row.key).set(dateOf(row),row);
     }
     const current = new Set((raw.articleHistory || []).filter(r=>dateOf(r)===end).map(r=>r.key));
-    const articles = (raw.articles || []).map(a=>({...a,key:a.key||String(a.url).split('/').pop()})).filter(a=>current.has(a.key)).map(a=>({...a,category:reviewed[a.key]||a.category||'要確認'}));
+    const articles = (raw.articles || []).map(a=>({...a,key:a.key||String(a.url).split('/').pop()})).filter(a=>current.has(a.key)).map(a=>({...a,category:a.category||'要確認'}));
     return {raw,summaries,latest,end,history,articles,followers:new Map((raw.followers||[]).map(r=>[dateOf(r),r]))};
   }
   function delta(model,key,end,n) {
