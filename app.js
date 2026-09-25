@@ -119,9 +119,10 @@ function categoryEvidence() {
 }
 function drawDecisions() {
   const evidence=categoryEvidence(),funnel=model.raw.funnel,historyDays=new Set((model.raw.articleHistory||[]).map(M.dateOf)).size;
-  const active=evidence.reduce((sum,item)=>sum+item.active.length,0),funnelDays=model.raw.funnelHistory?.length||1;
+  const funnelHistory=model.raw.funnel?.history||model.raw.funnelHistory||[];
+  const active=evidence.reduce((sum,item)=>sum+item.active.length,0),funnelDays=funnelHistory.length||1;
   $('#decisionCoverage').textContent=latestFunnelRows().length?`公式指標 ${funnel.date}・履歴 ${historyDays}日`:'公式指標を記録中';
-  $('#decisionSummary').innerHTML=`<div><span>全体の${period.n}日変化</span><strong>${signed(period.sum('pv'))}<small> PV</small></strong><small>${period.eligible.length}/${model.articles.length}記事で比較可能</small></div><div><span>動きのある記事</span><strong>${number(active)}<small> 本</small></strong><small>分類横断・直近7日</small></div><div><span>公式指標の履歴</span><strong>${funnelDays}<small> 日</small></strong><small>${model.raw.funnelHistory?.length?'期間比較に利用':'現在は単日のみ・記録中'}</small></div>`;
+  $('#decisionSummary').innerHTML=`<div><span>全体の${period.n}日変化</span><strong>${signed(period.sum('pv'))}<small> PV</small></strong><small>${period.eligible.length}/${model.articles.length}記事で比較可能</small></div><div><span>動きのある記事</span><strong>${number(active)}<small> 本</small></strong><small>分類横断・直近7日</small></div><div><span>公式指標の履歴</span><strong>${funnelDays}<small> 日</small></strong><small>${funnelHistory.length?'履歴を蓄積中':'現在は単日のみ・記録中'}</small></div>`;
   $('#categoryDecisions').innerHTML=evidence.map(item=>{const stale=item.published?M.age(item.published,model.end):null;return `<article class="decision-card"><header><div><h3>${esc(item.category)}</h3><small>${item.items.length}記事・公式指標${item.official.length}記事</small></div><span class="confidence ${item.confidence==='十分'?'good':item.confidence==='不足'?'low':''}">判断材料：${item.confidence}</span></header><dl><div><dt>直近7日PV増加</dt><dd>${signed(item.pv7)}</dd></div><div><dt>IMP→PV率</dt><dd>${percent(item.impPv)}</dd></div><div><dt>PV→スキ率</dt><dd>${percent(item.pvLike)}</dd></div><div><dt>再現性</dt><dd>${esc(item.recurrence)}</dd></div><div><dt>動きのある記事</dt><dd>${item.active.length}/${item.d7.length}本</dd></div><div><dt>最終投稿日</dt><dd>${item.published?`${esc(item.published)}${stale!==null?`（${stale}日前）`:''}`:'不明'}</dd></div></dl></article>`}).join('');
   $('#decisionNote').textContent='「十分」は3記事以上に7日履歴と同日の公式4指標があり、PV増加の70%超を1記事だけが占めない場合。「限定的」は最低条件を満たすものの単日公式指標など制約がある場合です。公式指標の期間変化・流入元は履歴が届くまで判断しません。';
 }
