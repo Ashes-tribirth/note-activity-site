@@ -11,7 +11,7 @@ const number = value => value === null || value === undefined ? '記録不足' :
 const signed = value => value === null || value === undefined ? '記録不足' : (value > 0 ? '+' : '') + fmt.format(value);
 const ratio = (numerator,denominator) => M.numeric(numerator)===null||M.numeric(denominator)===null||Number(denominator)===0?null:Number(numerator)/Number(denominator)*100;
 const percent = value => value===null?'—':`${value.toFixed(1)}%`;
-const labels = {pv:'従来ビュー',likes:'スキ',comments:'コメント',followers:'フォロワー',following:'フォロー'};
+const labels = {pv:'PV',likes:'スキ',comments:'コメント',followers:'フォロワー',following:'フォロー'};
 const units = {pv:'回',likes:'件',comments:'件',followers:'人',following:'人'};
 const selected = new Set();
 let model, period, detailKey = null;
@@ -78,22 +78,15 @@ function drawOverview() {
   $('#summaryCards').innerHTML=M.fields.map(f=>metricCard(labels[f]+'の増加',period.sum(f),period.prev(f),units[f],period.compared(f),period.comparable.length)).join('')+metricCard('フォロワーの純増',M.followerDelta(model,model.end,n),M.followerDelta(model,period.start,n),'人');
   const hours=startAt?(Date.parse(endAt)-Date.parse(startAt))/3600000:null;
   $('#coverage').textContent=`記事指標は${model.articles.length}本中、${n+1}日分の記録がそろう${period.eligible.length}本の合計。新作・欠測など${model.articles.length-period.eligible.length}本は合計に含めません。前期間比較は両期間の記録がそろう${period.comparable.length}本に対象をそろえます。${hours===null?'':`取得時点間は${hours.toFixed(1)}時間です。`}`;
-  $('#lifetime').innerHTML=`<div class="lifetime-values">${[['従来ビュー',model.latest.totalPv],['スキ',model.latest.totalLikes],['コメント',model.latest.totalComments],['公開記事',model.latest.articleCount],['フォロー',model.followers.get(model.end)?.followingCount],['フォロワー',model.followers.get(model.end)?.followerCount]].map(([l,v])=>`<span>${l} <b>${number(v)}</b></span>`).join('')}</div>`;
+  $('#lifetime').innerHTML=`<div class="lifetime-values">${[['PV',model.latest.totalPv],['スキ',model.latest.totalLikes],['コメント',model.latest.totalComments],['公開記事',model.latest.articleCount],['フォロー',model.followers.get(model.end)?.followingCount],['フォロワー',model.followers.get(model.end)?.followerCount]].map(([l,v])=>`<span>${l} <b>${number(v)}</b></span>`).join('')}</div>`;
   drawTrend();
 }
 function drawTrend() {
-  const metric=$('#metric').value||'pv', follow=metric==='following', field='followingCount';
-  const points=M.range(model.end,period.n).map(date=>({date,value:follow?M.numeric(model.followers.get(date)?.[field]):period.eligible.length?period.eligible.reduce((s,a)=>s+M.numeric(model.history.get(a.key).get(date)[metric])-M.numeric(model.history.get(a.key).get(period.start)[metric]),0):null}));
-  $('#trendTitle').textContent=follow?`${labels[metric]}数の推移`:`${labels[metric]}：期間開始からの増加`;
-  $('#overviewChart').innerHTML=lineChart(points,units[metric],$('#trendTitle').textContent);
-  $('#overviewValues').innerHTML=table(['取得日',follow?labels[metric]+'数':'期間開始からの増加'],points.map(p=>`<tr><td>${p.date}</td><td>${number(p.value)}${p.value===null?'':units[metric]}</td></tr>`));
-}
-function drawFollowerTrend() {
-  const points=[...model.followers.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([date,row])=>({date,value:M.numeric(row.followerCount)}));
-  const valid=points.filter(p=>p.value!==null);
-  $('#followerChart').innerHTML=lineChart(points,'人','フォロワー数の推移');
-  $('#followerValues').innerHTML=valid.length?table(['取得日','フォロワー数'],points.map(p=>`<tr><td>${p.date}</td><td>${number(p.value)}${p.value===null?'':'人'}</td></tr>`)):empty('フォロワー履歴を記録中です。');
-  $('#followerTrendMeta').textContent=valid.length<2?'記録中':`${valid[0].date} → ${valid.at(-1).date} ／ ${signed(valid.at(-1).value-valid[0].value)}人`;
+  const dates=M.range(model.end,period.n);
+  const series=['pv','likes','comments'].map(metric=>({metric,label:`${labels[metric]}増加`,unit:units[metric],points:dates.map(date=>({date,value:period.eligible.length?period.eligible.reduce((sum,article)=>sum+M.numeric(model.history.get(article.key).get(date)[metric])-M.numeric(model.history.get(article.key).get(period.start)[metric]),0):null}))}));
+  series.push({metric:'followers',label:'フォロワー数',unit:'人',points:dates.map(date=>({date,value:M.numeric(model.followers.get(date)?.followerCount)}))});
+  $('#overviewCharts').innerHTML=series.map(item=>`<section class="trend-card"><h4>${esc(item.label)}</h4>${lineChart(item.points,item.unit,item.label)}</section>`).join('');
+  $('#overviewValues').innerHTML=table(['取得日',...series.map(item=>item.label)],dates.map((date,index)=>`<tr><td>${date}</td>${series.map(item=>`<td class="num">${number(item.points[index].value)}${item.points[index].value===null?'':item.unit}</td>`).join('')}</tr>`));
 }
 function median(values) {
   const sorted=[...values].sort((a,b)=>a-b),n=sorted.length;
@@ -125,10 +118,10 @@ function categoryEvidence() {
 function drawDecisions() {
   const evidence=categoryEvidence(),funnel=model.raw.funnel,historyDays=new Set((model.raw.articleHistory||[]).map(M.dateOf)).size;
   const officialHistory=funnelHistory();
-  const active=evidence.reduce((sum,item)=>sum+item.active.length,0),funnelDays=officialHistory.length||1;
+  const upward=evidence.filter(item=>item.pv7>0).length,repeated=evidence.filter(item=>item.recurrence==='複数記事で確認').length,funnelDays=officialHistory.length||1;
   $('#decisionCoverage').textContent=latestFunnelRows().length?`公式指標 ${funnel.date}・履歴 ${historyDays}日`:'公式指標を記録中';
-  $('#decisionSummary').innerHTML=`<div><span>全体の${period.n}日変化</span><strong>${signed(period.sum('pv'))}<small> PV</small></strong><small>${period.eligible.length}/${model.articles.length}記事で比較可能</small></div><div><span>動きのある記事</span><strong>${number(active)}<small> 本</small></strong><small>分類横断・直近7日</small></div><div><span>公式指標の履歴</span><strong>${funnelDays}<small> 日</small></strong><small>${officialHistory.length?'履歴を蓄積中':'現在は単日のみ・記録中'}</small></div>`;
-  $('#categoryDecisions').innerHTML=evidence.map(item=>{const stale=item.published?M.age(item.published,model.end):null;return `<article class="decision-card"><header><div><h3>${esc(item.category)}</h3><small>${item.items.length}記事・公式指標${item.official.length}記事</small></div><span class="confidence ${item.confidence==='十分'?'good':item.confidence==='不足'?'low':''}">判断材料：${item.confidence}</span></header><dl><div><dt>直近7日PV増加</dt><dd>${signed(item.pv7)}</dd></div><div><dt>IMP→PV率</dt><dd>${percent(item.impPv)}</dd></div><div><dt>PV→スキ率</dt><dd>${percent(item.pvLike)}</dd></div><div><dt>再現性</dt><dd>${esc(item.recurrence)}</dd></div><div><dt>動きのある記事</dt><dd>${item.active.length}/${item.d7.length}本</dd></div><div><dt>最終投稿日</dt><dd>${item.published?`${esc(item.published)}${stale!==null?`（${stale}日前）`:''}`:'不明'}</dd></div></dl></article>`}).join('');
+  $('#decisionSummary').innerHTML=`<div><span>PVが上向きの分類</span><strong>${number(upward)}<small> / ${evidence.length}</small></strong><small>直近7日の実測差分</small></div><div><span>複数記事で再現</span><strong>${number(repeated)}<small> 分類</small></strong><small>単発の影響を分離</small></div><div><span>公式指標の履歴</span><strong>${funnelDays}<small> 日</small></strong><small>${officialHistory.length?'履歴を蓄積中':'現在は単日のみ・記録中'}</small></div>`;
+  $('#categoryDecisions').innerHTML=evidence.map(item=>{const stale=item.published?M.age(item.published,model.end):null;const movement=item.pv7===null?'7日比較は記録不足':item.pv7>0?`直近7日で ${signed(item.pv7)} PV`:item.pv7<0?`直近7日で ${signed(item.pv7)} PV`:'直近7日のPV増加なし';return `<article class="decision-card"><header><div><h3>${esc(item.category)}</h3><small>${item.items.length}記事</small></div><span class="confidence ${item.confidence==='十分'?'good':item.confidence==='不足'?'low':''}">判断材料：${item.confidence}</span></header><p class="decision-finding"><strong>${esc(movement)}</strong><span>${esc(item.recurrence)}</span></p><div class="decision-key"><span>閲覧効率 <b>${percent(item.impPv)}</b></span><span>読後反応 <b>${percent(item.pvLike)}</b></span></div><details class="decision-evidence"><summary>根拠を確認</summary><dl><div><dt>公式指標のある記事</dt><dd>${item.official.length}/${item.items.length}本</dd></div><div><dt>動きのある記事</dt><dd>${item.active.length}/${item.d7.length}本</dd></div><div><dt>最終投稿日</dt><dd>${item.published?`${esc(item.published)}${stale!==null?`（${stale}日前）`:''}`:'不明'}</dd></div><div><dt>PV増加の偏り</dt><dd>${item.topShare===null?'—':`${(item.topShare*100).toFixed(0)}%が最多記事`}</dd></div></dl></details></article>`}).join('');
   $('#decisionNote').textContent='「十分」は3記事以上に7日履歴と公式4指標があり、PV増加の70%超を1記事だけが占めない場合。「限定的」は最低条件を満たすものの履歴や対象数に制約がある場合です。率は直近最大7日分の実数合計から計算しています。流入元は取得開始まで判断しません。';
 }
 function scatterPanel(title,items,xLabel,yLabel,quadrants) {
@@ -137,8 +130,10 @@ function scatterPanel(title,items,xLabel,yLabel,quadrants) {
   const x=v=>left+v/maxX*(width-left-right),y=v=>height-bottom-v/maxY*(height-top-bottom);
   const dots=items.map(a=>`<a href="#" data-detail="${esc(a.key)}" aria-label="${esc(a.title)}の詳細"><circle class="position-point" cx="${x(a.x)}" cy="${y(a.y)}" r="6"><title>${esc(a.title)}｜${esc(xLabel)} ${number(a.x)}｜${esc(yLabel)} ${percent(a.y)}</title></circle></a>`).join('');
   const chart=`<div class="position-wrap"><svg class="position-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(title)}"><line class="position-axis" x1="${left}" y1="${height-bottom}" x2="${width-right}" y2="${height-bottom}"/><line class="position-axis" x1="${left}" y1="${top}" x2="${left}" y2="${height-bottom}"/><line class="position-mid" x1="${x(midX)}" y1="${top}" x2="${x(midX)}" y2="${height-bottom}"/><line class="position-mid" x1="${left}" y1="${y(midY)}" x2="${width-right}" y2="${y(midY)}"/><text class="position-label" x="${left}" y="17">${esc(yLabel)}</text><text class="position-label" x="${width-right}" y="${height-15}" text-anchor="end">${esc(xLabel)}</text><text class="position-quadrant" x="${left+8}" y="${top+18}">${esc(quadrants[0])}</text><text class="position-quadrant" x="${width-right-8}" y="${top+18}" text-anchor="end">${esc(quadrants[1])}</text><text class="position-quadrant" x="${left+8}" y="${height-bottom-10}">${esc(quadrants[2])}</text><text class="position-quadrant" x="${width-right-8}" y="${height-bottom-10}" text-anchor="end">${esc(quadrants[3])}</text><text class="position-tick" x="${x(midX)}" y="${height-bottom+20}" text-anchor="middle">中央値 ${number(Math.round(midX*10)/10)}</text><text class="position-tick" x="${left-8}" y="${y(midY)+4}" text-anchor="end">${percent(midY)}</text>${dots}</svg></div>`;
-  const rows=[...items].sort((a,b)=>b.x-a.x).map(a=>{const quadrant=a.x>=midX?(a.y>=midY?quadrants[1]:quadrants[3]):(a.y>=midY?quadrants[0]:quadrants[2]);return `<tr><td class="article-cell"><button class="article-title" data-detail="${esc(a.key)}" type="button">${esc(a.title)}</button><small>${esc(a.category)}</small></td><td class="num">${number(a.x)}</td><td class="num">${percent(a.y)}</td><td>${esc(quadrant)}</td><td>${esc(String(a.publishedAt||'不明').slice(0,10))}</td></tr>`});
-  return `<section class="scatter-block"><h3>${esc(title)}</h3>${chart}<details><summary>点の記事一覧（${items.length}本）</summary><div class="table-wrap">${table(['記事',xLabel,yLabel,'象限','公開日'],rows)}</div></details><p class="basis">基準：${esc(xLabel)}中央値 ${number(Math.round(midX*10)/10)}、${esc(yLabel)}中央値 ${percent(midY)}。率の分母が0の記事は除外。</p></section>`;
+  const grouped=quadrants.map(()=>[]);
+  const rows=[...items].sort((a,b)=>b.x-a.x).map(a=>{const index=a.x>=midX?(a.y>=midY?1:3):(a.y>=midY?0:2);grouped[index].push(a);return `<tr><td class="article-cell"><button class="article-title" data-detail="${esc(a.key)}" type="button">${esc(a.title)}</button><small>${esc(a.category)}</small></td><td class="num">${number(a.x)}</td><td class="num">${percent(a.y)}</td><td>${esc(quadrants[index])}</td><td>${esc(String(a.publishedAt||'不明').slice(0,10))}</td></tr>`});
+  const summary=grouped.map((group,index)=>`<article class="quadrant-card"><span>${esc(quadrants[index])}</span><strong>${group.length}本</strong>${group.length?`<button type="button" data-detail="${esc(group[0].key)}">${esc(group[0].title)}</button>${group.length>1?`<small>ほか${group.length-1}本</small>`:''}`:'<small>該当なし</small>'}</article>`).join('');
+  return `<section class="scatter-block"><h3>${esc(title)}</h3><div class="quadrant-grid">${summary}</div><details class="scatter-details"><summary>点の分布と全記事を確認（${items.length}本）</summary>${chart}<div class="table-wrap">${table(['記事',xLabel,yLabel,'象限','公開日'],rows)}</div></details><p class="basis">基準：表示対象の${esc(xLabel)}中央値 ${number(Math.round(midX*10)/10)}、${esc(yLabel)}中央値 ${percent(midY)}。点の分布は補助表示です。率の分母が0の記事は除外します。</p></section>`;
 }
 function drawArticlePosition() {
   const byKey=new Map(model.articles.map(a=>[a.key,a]));
@@ -162,19 +157,12 @@ function drawContributions() {
   const order=['新作（0〜7日）','中期（8〜30日）','過去記事（31日〜）','公開日不明'];
   $('#ageMix').innerHTML=groupBars(groups('band').sort((a,b)=>order.indexOf(a.name)-order.indexOf(b.name)),'ageFilter');
   $('#categoryMix').innerHTML=groupBars(groups('category').sort((a,b)=>(b.value??-Infinity)-(a.value??-Infinity)),'category');
-  $('#contributionNote').textContent=`上の従来ビュー増加 ${signed(period.sum('pv'))}回と同じ対象の記事を分解しています。棒は合計への寄与を示し、1記事の強さを示すものではありません。新作も基準日の記録がなければ「記録不足」です。`;
-}
-function spark(article) {
-  const dates=M.range(model.end,period.n),values=dates.map(date=>({date,value:M.numeric(model.history.get(article.key)?.get(date)?.pv)})),valid=values.filter(v=>v.value!==null);
-  if(valid.length<2)return '—';
-  const lo=Math.min(...valid.map(p=>p.value)),hi=Math.max(...valid.map(p=>p.value));
-  const x=i=>3+i/period.n*84,y=v=>27-(v-lo)/Math.max(1,hi-lo)*24;
-  return `<svg class="spark" viewBox="0 0 90 30" role="img" aria-label="従来ビューの推移。詳細で日付と数値を確認">${values.slice(1).map((p,i)=>p.value!==null&&values[i].value!==null?`<line x1="${x(i)}" y1="${y(values[i].value)}" x2="${x(i+1)}" y2="${y(p.value)}" stroke="#5790ae" stroke-width="2"/>`:'').join('')}</svg>`;
+  $('#contributionNote').textContent=`上のPV増加 ${signed(period.sum('pv'))}回と同じ対象の記事を分解しています。棒は合計への寄与を示し、1記事の強さを示すものではありません。新作も基準日の記録がなければ「記録不足」です。`;
 }
 function ledgerRows(items) {
   const metric=['pv','likes','comments'].includes($('#sort').value)?$('#sort').value:'pv';
   const others=M.fields.filter(f=>f!==metric);
-  return table(['比較','記事名','公開から',labels[metric]+' 増加',labels[others[0]]+' 増加',labels[others[1]]+' 増加','ビュー推移'],items.map(a=>`<tr><td><input class="compare-check" type="checkbox" data-compare="${esc(a.key)}" aria-label="${esc(a.title)}を比較" ${selected.has(a.key)?'checked':''}></td><td class="article-cell"><button class="article-title" type="button" data-detail="${esc(a.key)}">${esc(a.title)}</button><small>${esc(a.category)} · 公開 ${esc(String(a.publishedAt||'不明').slice(0,10))}${a.provisionalDormant?' · 動きなしは記録開始からの暫定判定':''}</small></td><td class="num">${a.age===null?'不明':a.age+'日'}</td><td class="num ${a.delta?.[metric]==null?'missing':''}">${signed(a.delta?.[metric])}</td>${others.map(f=>`<td class="num">${signed(a.delta?.[f])}</td>`).join('')}<td>${spark(a)}</td></tr>`),'ledger-table');
+  return table(['比較','記事名','公開から',labels[metric]+' 増加',labels[others[0]]+' 増加',labels[others[1]]+' 増加'],items.map(a=>`<tr><td><input class="compare-check" type="checkbox" data-compare="${esc(a.key)}" aria-label="${esc(a.title)}を比較" ${selected.has(a.key)?'checked':''}></td><td class="article-cell"><button class="article-title" type="button" data-detail="${esc(a.key)}">${esc(a.title)}</button><small>${esc(a.category)} · 公開 ${esc(String(a.publishedAt||'不明').slice(0,10))}${a.provisionalDormant?' · 動きなしは記録開始からの暫定判定':''}</small></td><td class="num">${a.age===null?'不明':a.age+'日'}</td><td class="num ${a.delta?.[metric]==null?'missing':''}">${signed(a.delta?.[metric])}</td>${others.map(f=>`<td class="num">${signed(a.delta?.[f])}</td>`).join('')}</tr>`),'ledger-table');
 }
 function drawLedger() {
   const query=$('#search').value.trim().toLowerCase(),category=$('#category').value,band=$('#ageFilter').value,sort=$('#sort').value||'pv';
@@ -186,7 +174,7 @@ function drawLedger() {
   $('#articleCount').textContent=`${period.start} → ${period.end} の増加 ／ 表示${active.length}本（記録不足を含む）。記事名を押すと詳細。スマホの数値は並び順で切り替えられます。`;
   $('#ledger').innerHTML=active.length?ledgerRows(active):empty('この条件に合う通常記事はありません。動きのない記事、または絞り込み条件を確認してください。');
   $('#dormantLabel').textContent=`直近7日で動きのない記事（暫定判定を含む） · ${dormant.length}本`;
-  $('#dormantSummary').textContent=`従来ビュー・スキ・コメントのすべてが不変。7日未満の記録は記録開始から暫定判定します。品質の低さを意味しません。対象の累計：従来ビュー ${number(dormant.reduce((s,a)=>s+Number(a.pv),0))} ／ スキ ${number(dormant.reduce((s,a)=>s+Number(a.likes),0))}。従来ビューを分母にした反応率は表示しません。`;
+  $('#dormantSummary').textContent=`PV・スキ・コメントのすべてが不変。7日未満の記録は記録開始から暫定判定します。品質の低さを意味しません。対象の累計：PV ${number(dormant.reduce((s,a)=>s+Number(a.pv),0))} ／ スキ ${number(dormant.reduce((s,a)=>s+Number(a.likes),0))}。PVを分母にした反応率は表示しません。`;
   $('#dormantLedger').innerHTML=dormant.length?ledgerRows(dormant):empty('該当なし');
   $('#selectionLink').textContent=`比較する記事：${selected.size}本`;
 }
@@ -225,7 +213,7 @@ function drawDetail(key) {
   const daily=model.raw.funnel?.articles?.find(r=>r.key===key),start=history[0]?.[0];
   const officialSeries=funnelHistory().map(day=>({date:day.date,row:(day.articles||[]).find(r=>r.key===key)}));
   const points=history.length?M.range(model.end,M.age(start,model.end)).map(date=>({date,value:M.numeric(model.history.get(key)?.get(date)?.pv)})):[];
-  $('#articleDetail').innerHTML=`<p class="basis">${esc(a.category)} ／ 公開 ${esc(dateTime(a.publishedAt))} JST ／ 記録 ${esc(start||'なし')}〜${model.end}</p><div class="detail-actions"><a href="${safeUrl(a.url)}" target="_blank" rel="noopener noreferrer">noteで記事を読む ↗</a><button type="button" data-toggle-compare="${esc(key)}">${selected.has(key)?'比較から外す':'比較に追加'}</button></div><h3>${period.start} → ${period.end} の増加</h3><div class="detail-values">${M.fields.map(f=>`<div><small>${labels[f]}</small><strong>${signed(a.delta?.[f])}</strong></div>`).join('')}</div>${!M.valid(a.delta)?'<p class="basis">基準日または途中の記録がありません。現在の累計を期間増加の代わりには使いません。</p>':''}<h3>従来ビューの成長曲線（累計）</h3>${lineChart(points,'回','この記事の従来ビュー累計')}<details class="data-details"><summary>日別の累計を見る</summary><div class="table-wrap">${table(['取得日','従来ビュー','スキ','コメント'],history.map(([date,r])=>`<tr><td>${date}</td>${M.fields.map(f=>`<td>${number(M.numeric(r[f]))}</td>`).join('')}</tr>`))}</div></details><h3>公式指標の日次推移</h3><div class="official-curves">${[['impressions','IMP','回'],['pageviews','PV','回'],['likes','スキ','件'],['comments','コメント','件']].map(([field,label,unit])=>`<section><h4>${label}</h4>${lineChart(officialSeries.map(item=>({date:item.date,value:M.numeric(item.row?.[field])})),unit,`${a.title}の${label}日次推移`)}</section>`).join('')}</div><h3>公式の単日指標：${esc(model.raw.funnel?.date||'未取得')} の単日データ</h3>${daily?table(['インプレッション','PV','スキ','コメント'],[`<tr>${['impressions','pageviews','likes','comments'].map(f=>`<td>${number(M.numeric(daily[f]))}</td>`).join('')}</tr>`]):empty('この日の公式応答にこの記事の記録はありません。')}<p class="basis">日次指標は各日の実数です。記事別の流入元・フォローへの貢献人数は未取得です。</p>`;
+  $('#articleDetail').innerHTML=`<p class="basis">${esc(a.category)} ／ 公開 ${esc(dateTime(a.publishedAt))} JST ／ 記録 ${esc(start||'なし')}〜${model.end}</p><div class="detail-actions"><a href="${safeUrl(a.url)}" target="_blank" rel="noopener noreferrer">noteで記事を読む ↗</a><button type="button" data-toggle-compare="${esc(key)}">${selected.has(key)?'比較から外す':'比較に追加'}</button></div><h3>${period.start} → ${period.end} の増加</h3><div class="detail-values">${M.fields.map(f=>`<div><small>${labels[f]}</small><strong>${signed(a.delta?.[f])}</strong></div>`).join('')}</div>${!M.valid(a.delta)?'<p class="basis">基準日または途中の記録がありません。現在の累計を期間増加の代わりには使いません。</p>':''}<h3>PVの成長曲線（累計）</h3>${lineChart(points,'回','この記事のPV累計')}<details class="data-details"><summary>日別の累計を見る</summary><div class="table-wrap">${table(['取得日','PV','スキ','コメント'],history.map(([date,r])=>`<tr><td>${date}</td>${M.fields.map(f=>`<td>${number(M.numeric(r[f]))}</td>`).join('')}</tr>`))}</div></details><h3>公式指標の日次推移</h3><div class="official-curves">${[['impressions','IMP','回'],['pageviews','PV','回'],['likes','スキ','件'],['comments','コメント','件']].map(([field,label,unit])=>`<section><h4>${label}</h4>${lineChart(officialSeries.map(item=>({date:item.date,value:M.numeric(item.row?.[field])})),unit,`${a.title}の${label}日次推移`)}</section>`).join('')}</div><h3>公式の単日指標：${esc(model.raw.funnel?.date||'未取得')} の単日データ</h3>${daily?table(['インプレッション','PV','スキ','コメント'],[`<tr>${['impressions','pageviews','likes','comments'].map(f=>`<td>${number(M.numeric(daily[f]))}</td>`).join('')}</tr>`]):empty('この日の公式応答にこの記事の記録はありません。')}<p class="basis">日次指標は各日の実数です。記事別の流入元・フォローへの貢献人数は未取得です。</p>`;
 }
 function toggleCompare(key) {
   if(selected.has(key))selected.delete(key);
@@ -235,12 +223,11 @@ function toggleCompare(key) {
 }
 function draw() {
   period=M.period(model,Number($('#period').value)||7);
-  drawHealth();drawDecisions();drawOverview();drawFollowerTrend();drawContributions();drawArticlePosition();drawLedger();drawComparison();drawOfficial();drawCampaigns();
+  drawHealth();drawDecisions();drawOverview();drawContributions();drawArticlePosition();drawLedger();drawComparison();drawOfficial();drawCampaigns();
   if(detailKey)drawDetail(detailKey);
 }
 function bind() {
   $('#period').addEventListener('change',draw);
-  $('#metric').addEventListener('change',drawTrend);
   for(const id of ['search','category','ageFilter','sort'])$('#'+id).addEventListener(id==='search'?'input':'change',drawLedger);
   $('#compareAge').addEventListener('change',drawComparison);
   $('#clearFilters').addEventListener('click',()=>{for(const id of ['search','category','ageFilter'])$('#'+id).value='';drawLedger();});
@@ -274,5 +261,5 @@ async function load() {
     $('#retry').hidden=false;
   }
 }
-window.addEventListener?.('resize',()=>{if(model){drawTrend();drawFollowerTrend();drawArticlePosition();if(detailKey)drawDetail(detailKey);}});
+window.addEventListener?.('resize',()=>{if(model){drawTrend();drawArticlePosition();if(detailKey)drawDetail(detailKey);}});
 bind();load();
