@@ -9,6 +9,8 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
 const safeUrl = value => { try { const url = new URL(value); return url.protocol === 'https:' ? esc(url.href) : '#'; } catch { return '#'; } };
 const number = value => value === null || value === undefined ? '記録不足' : fmt.format(value);
 const signed = value => value === null || value === undefined ? '記録不足' : (value > 0 ? '+' : '') + fmt.format(value);
+const ratio = (numerator,denominator) => M.numeric(numerator)===null||M.numeric(denominator)===null||Number(denominator)===0?null:Number(numerator)/Number(denominator)*100;
+const percent = value => value===null?'—':`${value.toFixed(1)}%`;
 const labels = {pv:'従来ビュー',likes:'スキ',comments:'コメント',followers:'フォロワー',following:'フォロー'};
 const units = {pv:'回',likes:'件',comments:'件',followers:'人',following:'人'};
 const selected = new Set();
@@ -97,17 +99,48 @@ function median(values) {
   const sorted=[...values].sort((a,b)=>a-b),n=sorted.length;
   return n%2?sorted[(n-1)/2]:(sorted[n/2-1]+sorted[n/2])/2;
 }
+function latestFunnelRows() { return model.raw.funnel?.articles||[]; }
+function categoryEvidence() {
+  const funnelByKey=new Map(latestFunnelRows().map(row=>[row.key,row]));
+  return [...new Set(period.items.map(a=>a.category))].map(category=>{
+    const items=period.items.filter(a=>a.category===category),official=items.map(a=>({article:a,row:funnelByKey.get(a.key)})).filter(x=>x.row);
+    const d7=items.map(a=>({article:a,delta:M.delta(model,a.key,model.end,7)})).filter(x=>M.valid(x.delta));
+    const active=d7.filter(x=>M.fields.some(field=>x.delta[field]!==0)),contributors=active.filter(x=>x.delta.pv>0).sort((a,b)=>b.delta.pv-a.delta.pv);
+    const pv7=d7.length?d7.reduce((sum,x)=>sum+x.delta.pv,0):null,topShare=pv7>0&&contributors.length?contributors[0].delta.pv/pv7:null;
+    const totals=official.reduce((sum,x)=>({imp:sum.imp+(M.numeric(x.row.impressions)||0),pv:sum.pv+(M.numeric(x.row.pageviews)||0),likes:sum.likes+(M.numeric(x.row.likes)||0),comments:sum.comments+(M.numeric(x.row.comments)||0)}),{imp:0,pv:0,likes:0,comments:0});
+    const published=items.map(a=>String(a.publishedAt||'').slice(0,10)).filter(Boolean).sort().at(-1)||null;
+    const complete=official.filter(x=>['impressions','pageviews','likes','comments'].every(f=>M.numeric(x.row[f])!==null)).length;
+    let confidence=!latestFunnelRows().length?'記録中':items.length>=3&&d7.length>=3&&complete>=3?'限定的':'不足';
+    if(confidence==='限定的'&&(topShare===null||topShare<=0.7))confidence='十分';
+    const recurrence=contributors.length>=2&&topShare!==null&&topShare<=0.7?'複数記事で確認':contributors.length===1||topShare>0.7?'単一記事の影響が大きい':'確認できず';
+    return {category,items,official,d7,active,pv7,topShare,totals,published,confidence,recurrence,impPv:ratio(totals.pv,totals.imp),pvLike:ratio(totals.likes,totals.pv)};
+  }).sort((a,b)=>(b.pv7??-Infinity)-(a.pv7??-Infinity));
+}
+function drawDecisions() {
+  const evidence=categoryEvidence(),funnel=model.raw.funnel,historyDays=new Set((model.raw.articleHistory||[]).map(M.dateOf)).size;
+  const active=evidence.reduce((sum,item)=>sum+item.active.length,0),funnelDays=model.raw.funnelHistory?.length||1;
+  $('#decisionCoverage').textContent=latestFunnelRows().length?`公式指標 ${funnel.date}・履歴 ${historyDays}日`:'公式指標を記録中';
+  $('#decisionSummary').innerHTML=`<div><span>全体の${period.n}日変化</span><strong>${signed(period.sum('pv'))}<small> PV</small></strong><small>${period.eligible.length}/${model.articles.length}記事で比較可能</small></div><div><span>動きのある記事</span><strong>${number(active)}<small> 本</small></strong><small>分類横断・直近7日</small></div><div><span>公式指標の履歴</span><strong>${funnelDays}<small> 日</small></strong><small>${model.raw.funnelHistory?.length?'期間比較に利用':'現在は単日のみ・記録中'}</small></div>`;
+  $('#categoryDecisions').innerHTML=evidence.map(item=>{const stale=item.published?M.age(item.published,model.end):null;return `<article class="decision-card"><header><div><h3>${esc(item.category)}</h3><small>${item.items.length}記事・公式指標${item.official.length}記事</small></div><span class="confidence ${item.confidence==='十分'?'good':item.confidence==='不足'?'low':''}">判断材料：${item.confidence}</span></header><dl><div><dt>直近7日PV増加</dt><dd>${signed(item.pv7)}</dd></div><div><dt>IMP→PV率</dt><dd>${percent(item.impPv)}</dd></div><div><dt>PV→スキ率</dt><dd>${percent(item.pvLike)}</dd></div><div><dt>再現性</dt><dd>${esc(item.recurrence)}</dd></div><div><dt>動きのある記事</dt><dd>${item.active.length}/${item.d7.length}本</dd></div><div><dt>最終投稿日</dt><dd>${item.published?`${esc(item.published)}${stale!==null?`（${stale}日前）`:''}`:'不明'}</dd></div></dl></article>`}).join('');
+  $('#decisionNote').textContent='「十分」は3記事以上に7日履歴と同日の公式4指標があり、PV増加の70%超を1記事だけが占めない場合。「限定的」は最低条件を満たすものの単日公式指標など制約がある場合です。公式指標の期間変化・流入元は履歴が届くまで判断しません。';
+}
+function scatterPanel(title,items,xLabel,yLabel,quadrants) {
+  if(items.length<2)return `<section class="scatter-block"><h3>${esc(title)}</h3>${empty('同じ条件で比較できる記事が不足しています。')}</section>`;
+  const midX=median(items.map(a=>a.x)),midY=median(items.map(a=>a.y)),width=760,height=340,left=68,right=24,top=28,bottom=58,maxX=Math.max(1,...items.map(a=>a.x)),maxY=Math.max(1,...items.map(a=>a.y));
+  const x=v=>left+v/maxX*(width-left-right),y=v=>height-bottom-v/maxY*(height-top-bottom);
+  const dots=items.map(a=>`<a href="#" data-detail="${esc(a.key)}" aria-label="${esc(a.title)}の詳細"><circle class="position-point" cx="${x(a.x)}" cy="${y(a.y)}" r="6"><title>${esc(a.title)}｜${esc(xLabel)} ${number(a.x)}｜${esc(yLabel)} ${percent(a.y)}</title></circle></a>`).join('');
+  const chart=`<div class="position-wrap"><svg class="position-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(title)}"><line class="position-axis" x1="${left}" y1="${height-bottom}" x2="${width-right}" y2="${height-bottom}"/><line class="position-axis" x1="${left}" y1="${top}" x2="${left}" y2="${height-bottom}"/><line class="position-mid" x1="${x(midX)}" y1="${top}" x2="${x(midX)}" y2="${height-bottom}"/><line class="position-mid" x1="${left}" y1="${y(midY)}" x2="${width-right}" y2="${y(midY)}"/><text class="position-label" x="${left}" y="17">${esc(yLabel)}</text><text class="position-label" x="${width-right}" y="${height-15}" text-anchor="end">${esc(xLabel)}</text><text class="position-quadrant" x="${left+8}" y="${top+18}">${esc(quadrants[0])}</text><text class="position-quadrant" x="${width-right-8}" y="${top+18}" text-anchor="end">${esc(quadrants[1])}</text><text class="position-quadrant" x="${left+8}" y="${height-bottom-10}">${esc(quadrants[2])}</text><text class="position-quadrant" x="${width-right-8}" y="${height-bottom-10}" text-anchor="end">${esc(quadrants[3])}</text><text class="position-tick" x="${x(midX)}" y="${height-bottom+20}" text-anchor="middle">中央値 ${number(Math.round(midX*10)/10)}</text><text class="position-tick" x="${left-8}" y="${y(midY)+4}" text-anchor="end">${percent(midY)}</text>${dots}</svg></div>`;
+  const rows=[...items].sort((a,b)=>b.x-a.x).map(a=>{const quadrant=a.x>=midX?(a.y>=midY?quadrants[1]:quadrants[3]):(a.y>=midY?quadrants[0]:quadrants[2]);return `<tr><td class="article-cell"><button class="article-title" data-detail="${esc(a.key)}" type="button">${esc(a.title)}</button><small>${esc(a.category)}</small></td><td class="num">${number(a.x)}</td><td class="num">${percent(a.y)}</td><td>${esc(quadrant)}</td><td>${esc(String(a.publishedAt||'不明').slice(0,10))}</td></tr>`});
+  return `<section class="scatter-block"><h3>${esc(title)}</h3>${chart}<details><summary>点の記事一覧（${items.length}本）</summary><div class="table-wrap">${table(['記事',xLabel,yLabel,'象限','公開日'],rows)}</div></details><p class="basis">基準：${esc(xLabel)}中央値 ${number(Math.round(midX*10)/10)}、${esc(yLabel)}中央値 ${percent(midY)}。率の分母が0の記事は除外。</p></section>`;
+}
 function drawArticlePosition() {
-  const items=period.items.filter(a=>!a.dormant&&M.numeric(a.pv)!==null&&M.numeric(a.pv)>0&&M.numeric(a.likes)!==null&&M.numeric(a.comments)!==null).map(a=>({...a,rate:(Number(a.likes)+Number(a.comments))/Number(a.pv)*100}));
-  if(items.length<2){$('#articlePosition').innerHTML=empty('四象限を描くための実測記事が不足しています。記録中です。');$('#positionNote').textContent='';return;}
-  const midPv=median(items.map(a=>Number(a.pv))),midRate=median(items.map(a=>a.rate));
-  const width=Math.max(320,Math.min(980,(Number(window.innerWidth)||1080)-100)),height=390,left=62,right=22,top=24,bottom=55;
-  const maxPv=Math.max(1,...items.map(a=>Number(a.pv))),maxRate=Math.max(1,...items.map(a=>a.rate));
-  const x=v=>left+v/maxPv*(width-left-right),y=v=>height-bottom-v/maxRate*(height-top-bottom);
-  const xMid=x(midPv),yMid=y(midRate);
-  const dots=items.map(a=>`<circle class="position-point" cx="${x(Number(a.pv))}" cy="${y(a.rate)}" r="4"><title>${esc(a.title)}｜PV ${number(a.pv)}｜反応率 ${a.rate.toFixed(1)}%</title></circle>`).join('');
-  $('#articlePosition').innerHTML=`<div class="position-wrap"><svg class="position-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="記事ごとの累計PVと反応率の四象限"><line class="position-axis" x1="${left}" y1="${height-bottom}" x2="${width-right}" y2="${height-bottom}"/><line class="position-axis" x1="${left}" y1="${top}" x2="${left}" y2="${height-bottom}"/><line class="position-mid" x1="${xMid}" y1="${top}" x2="${xMid}" y2="${height-bottom}"/><line class="position-mid" x1="${left}" y1="${yMid}" x2="${width-right}" y2="${yMid}"/><text class="position-label" x="${left}" y="14">反応率（%）</text><text class="position-label" x="${width-right}" y="${height-16}" text-anchor="end">累計PV</text><text class="position-quadrant" x="${left+10}" y="${top+18}">高反応・低PV</text><text class="position-quadrant" x="${width-right-10}" y="${top+18}" text-anchor="end">高反応・高PV</text><text class="position-quadrant" x="${left+10}" y="${height-bottom-10}">低反応・低PV</text><text class="position-quadrant" x="${width-right-10}" y="${height-bottom-10}" text-anchor="end">低反応・高PV</text><text class="position-tick" x="${xMid}" y="${height-bottom+20}" text-anchor="middle">中央値 ${number(Math.round(midPv))}</text><text class="position-tick" x="${left-8}" y="${yMid+4}" text-anchor="end">${midRate.toFixed(1)}%</text>${dots}</svg></div>`;
-  $('#positionNote').textContent=`表示${items.length}本。直近7日で動きのない記事は除外。四象限は記事の優劣ではなく、現在のPV規模と反応の位置関係を確認するためのものです。基準：PV中央値 ${number(Math.round(midPv))}、反応率中央値 ${midRate.toFixed(1)}%。`;
+  const byKey=new Map(model.articles.map(a=>[a.key,a]));
+  const items=latestFunnelRows().map(row=>({...byKey.get(row.key),...row,key:row.key,impPv:ratio(row.pageviews,row.impressions),pvLike:ratio(row.likes,row.pageviews)}));
+  const exposure=items.filter(a=>a.title&&M.numeric(a.impressions)!==null&&a.impPv!==null).map(a=>({...a,x:Number(a.impressions),y:a.impPv}));
+  const reaction=items.filter(a=>a.title&&M.numeric(a.pageviews)!==null&&a.pvLike!==null).map(a=>({...a,x:Number(a.pageviews),y:a.pvLike}));
+  $('#positionPeriod').textContent=model.raw.funnel?.date?`${model.raw.funnel.date} 単日`:'記録中';
+  $('#articlePosition').innerHTML=scatterPanel('露出 → 閲覧',exposure,'IMP','IMP→PV率',['閲覧効率高・露出少','露出も閲覧効率も高い','露出不足','露出あり・閲覧効率低'])+scatterPanel('閲覧 → 反応',reaction,'PV','PV→スキ率',['反応率高・閲覧少','閲覧も反応率も高い','閲覧不足','閲覧あり・反応率低']);
+  $('#positionNote').textContent='対象は公式ダッシュボードから取得できた同一日の記事です。単日の位置関係であり、長期傾向や記事の優劣を示しません。点と一覧から記事詳細を開けます。';
 }
 function groupBars(groups,filter) {
   const max=Math.max(1,...groups.map(g=>Math.abs(g.value??0)));
@@ -162,13 +195,14 @@ function drawOfficial() {
   const dailyLabel=funnel?.date?funnel.date.replaceAll('-','/')+' の単日データ':'公式の単日データ';
   $('#officialHeading').textContent=dailyLabel;
   $('#officialDate').textContent='公式ダッシュボード';
-  if(!rows.length){$('#officialCards').innerHTML=empty('公式の単日指標は未取得です。');$('#officialTable').innerHTML='';return;}
+  if(!rows.length){$('#officialCards').innerHTML=empty('公式の単日指標は未取得です。');$('#officialTable').innerHTML='';$('#officialBasis').textContent='日次履歴を記録中です。';return;}
   $('#officialCards').innerHTML=fields.map(([key,label,unit])=>{
     const total=rows.every(r=>M.numeric(r[key])!==null)?rows.reduce((s,r)=>s+Number(r[key]),0):null;
     return `<div class="summary-card"><span class="label">${label}</span><strong>${number(total)}</strong><small>${unit} ／ 応答の${rows.length}記事</small></div>`;
   }).join('');
   const byKey=new Map(model.articles.map(a=>[a.key,a]));
-  $('#officialTable').innerHTML=table(['記事','インプレッション','PV','スキ','コメント'],[...rows].sort((a,b)=>(M.numeric(b.pageviews)??-Infinity)-(M.numeric(a.pageviews)??-Infinity)).map(r=>`<tr><td class="article-cell">${byKey.has(r.key)?`<button class="article-title" data-detail="${esc(r.key)}" type="button">${esc(byKey.get(r.key).title)}</button>`:esc(r.key)}</td>${fields.map(([key])=>`<td class="num">${number(M.numeric(r[key]))}</td>`).join('')}</tr>`));
+  $('#officialTable').innerHTML=table(['記事','IMP','PV','スキ','コメント','IMP→PV','PV→スキ','PV→コメント'],[...rows].sort((a,b)=>(M.numeric(b.pageviews)??-Infinity)-(M.numeric(a.pageviews)??-Infinity)).map(r=>`<tr><td class="article-cell">${byKey.has(r.key)?`<button class="article-title" data-detail="${esc(r.key)}" type="button">${esc(byKey.get(r.key).title)}</button><small>${esc(byKey.get(r.key).category)}</small>`:esc(r.key)}</td>${fields.map(([key])=>`<td class="num">${number(M.numeric(r[key]))}</td>`).join('')}<td class="num">${percent(ratio(r.pageviews,r.impressions))}</td><td class="num">${percent(ratio(r.likes,r.pageviews))}</td><td class="num">${percent(ratio(r.comments,r.pageviews))}</td></tr>`));
+  $('#officialBasis').textContent=`対象 ${funnel.date}、取得 ${dateTime(funnel.collectedAt)} JST、応答 ${rows.length}記事。率は保存せず表示時に実数から計算しています。流入元は現在APIに届いていません。公式指標の期間比較は日次履歴の公開後まで記録中です。`;
 }
 function drawCampaigns() {
   const data=model.raw.campaignData;
@@ -193,7 +227,7 @@ function toggleCompare(key) {
 }
 function draw() {
   period=M.period(model,Number($('#period').value)||7);
-  drawHealth();drawOverview();drawFollowerTrend();drawContributions();drawArticlePosition();drawLedger();drawComparison();drawOfficial();drawCampaigns();
+  drawHealth();drawDecisions();drawOverview();drawFollowerTrend();drawContributions();drawArticlePosition();drawLedger();drawComparison();drawOfficial();drawCampaigns();
   if(detailKey)drawDetail(detailKey);
 }
 function bind() {
@@ -210,8 +244,8 @@ function bind() {
     toggleCompare(key);
   });
   document.addEventListener('click',event=>{
-    const target=event.target.closest('button');if(!target)return;
-    if(target.dataset.detail){drawDetail(target.dataset.detail);$('#articleDialog').showModal();}
+    const target=event.target.closest('[data-detail],button');if(!target)return;
+    if(target.dataset.detail){event.preventDefault();drawDetail(target.dataset.detail);$('#articleDialog').showModal();}
     if(target.dataset.remove)toggleCompare(target.dataset.remove);
     if(target.dataset.toggleCompare)toggleCompare(target.dataset.toggleCompare);
     if(target.dataset.filter){for(const id of ['search','category','ageFilter'])$('#'+id).value='';$('#'+target.dataset.filter).value=target.dataset.value;drawLedger();$('#articles').scrollIntoView({behavior:'smooth',block:'start'});}
