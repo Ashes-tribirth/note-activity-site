@@ -156,7 +156,6 @@ function drawContributions() {
   });
   const order=['新作（0〜7日）','中期（8〜30日）','過去記事（31日〜）','公開日不明'];
   $('#ageMix').innerHTML=groupBars(groups('band').sort((a,b)=>order.indexOf(a.name)-order.indexOf(b.name)),'ageFilter');
-  $('#categoryMix').innerHTML=groupBars(groups('category').sort((a,b)=>(b.value??-Infinity)-(a.value??-Infinity)),'category');
   $('#contributionNote').textContent=`上のPV増加 ${signed(period.sum('pv'))}回と同じ対象の記事を分解しています。棒は合計への寄与を示し、1記事の強さを示すものではありません。新作も基準日の記録がなければ「記録不足」です。`;
 }
 function ledgerRows(items) {
