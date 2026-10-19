@@ -116,13 +116,17 @@ function categoryEvidence() {
   }).sort((a,b)=>(b.pv7??-Infinity)-(a.pv7??-Infinity));
 }
 function drawDecisions() {
-  const evidence=categoryEvidence(),funnel=model.raw.funnel,historyDays=new Set((model.raw.articleHistory||[]).map(M.dateOf)).size;
-  const officialHistory=funnelHistory();
-  const upward=evidence.filter(item=>item.pv7>0).length,repeated=evidence.filter(item=>item.recurrence==='複数記事で確認').length,funnelDays=officialHistory.length||1;
-  $('#decisionCoverage').textContent=latestFunnelRows().length?`公式指標 ${funnel.date}・履歴 ${historyDays}日`:'公式指標を記録中';
-  $('#decisionSummary').innerHTML=`<div><span>PVが上向きの分類</span><strong>${number(upward)}<small> / ${evidence.length}</small></strong><small>直近7日の実測差分</small></div><div><span>複数記事で再現</span><strong>${number(repeated)}<small> 分類</small></strong><small>単発の影響を分離</small></div><div><span>公式指標の履歴</span><strong>${funnelDays}<small> 日</small></strong><small>${officialHistory.length?'履歴を蓄積中':'現在は単日のみ・記録中'}</small></div>`;
-  $('#categoryDecisions').innerHTML=evidence.map(item=>{const stale=item.published?M.age(item.published,model.end):null;const movement=item.pv7===null?'7日比較は記録不足':item.pv7>0?`直近7日で ${signed(item.pv7)} PV`:item.pv7<0?`直近7日で ${signed(item.pv7)} PV`:'直近7日のPV増加なし';return `<article class="decision-card"><header><div><h3>${esc(item.category)}</h3><small>${item.items.length}記事</small></div><span class="confidence ${item.confidence==='十分'?'good':item.confidence==='不足'?'low':''}">判断材料：${item.confidence}</span></header><p class="decision-finding"><strong>${esc(movement)}</strong><span>${esc(item.recurrence)}</span></p><div class="decision-key"><span>閲覧効率 <b>${percent(item.impPv)}</b></span><span>読後反応 <b>${percent(item.pvLike)}</b></span></div><details class="decision-evidence"><summary>根拠を確認</summary><dl><div><dt>公式指標のある記事</dt><dd>${item.official.length}/${item.items.length}本</dd></div><div><dt>動きのある記事</dt><dd>${item.active.length}/${item.d7.length}本</dd></div><div><dt>最終投稿日</dt><dd>${item.published?`${esc(item.published)}${stale!==null?`（${stale}日前）`:''}`:'不明'}</dd></div><div><dt>PV増加の偏り</dt><dd>${item.topShare===null?'—':`${(item.topShare*100).toFixed(0)}%が最多記事`}</dd></div></dl></details></article>`}).join('');
-  $('#decisionNote').textContent='「十分」は3記事以上に7日履歴と公式4指標があり、PV増加の70%超を1記事だけが占めない場合。「限定的」は最低条件を満たすものの履歴や対象数に制約がある場合です。率は直近最大7日分の実数合計から計算しています。流入元は取得開始まで判断しません。';
+  const evidence=categoryEvidence();
+  const max=Math.max(1,...evidence.map(item=>Math.max(0,item.pv7??0)));
+  $('#decisionCoverage').textContent='直近7日・取得時点間';
+  $('#decisionSummary').innerHTML='';
+  $('#categoryDecisions').innerHTML=evidence.map(item=>{
+    const value=item.pv7===null?'記録不足':`${signed(item.pv7)} PV`;
+    const positive=item.d7.filter(x=>x.delta.pv>0).length;
+    const share=item.topShare!==null?`最多記事が ${Math.round(item.topShare*100)}%`:'';
+    return `<article class="category-row"><div class="category-line"><h3>${esc(item.category)}</h3><strong>${esc(value)}</strong></div><svg class="category-bar" viewBox="0 0 100 2" preserveAspectRatio="none" aria-hidden="true"><rect width="100" height="2" class="bar-track"/><rect width="${item.pv7===null?0:Math.max(0,item.pv7)/max*100}" height="2" class="bar-fill"/></svg><p>${item.d7.length}/${item.items.length}記事を集計 · PVが増えた記事 ${positive}本${share?' · '+share:''}</p></article>`;
+  }).join('');
+  $('#decisionNote').textContent='7日分の記録がそろう記事の合計です。新しい記事や欠測のある記事は含まれません。「要確認」は未分類の記事です。';
 }
 function scatterPanel(title,items,xLabel,yLabel,quadrants) {
   if(items.length<2)return `<section class="scatter-block"><h3>${esc(title)}</h3>${empty('同じ条件で比較できる記事が不足しています。')}</section>`;
